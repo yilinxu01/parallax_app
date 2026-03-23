@@ -210,10 +210,29 @@ export default function App() {
     console.log('Remixing card:', cardId);
   };
 
+  const phoneFrame: React.CSSProperties = {
+    width: '100%',
+    maxWidth: '390px',
+    height: '100vh',
+    maxHeight: '844px',
+    position: 'relative',
+    overflow: 'hidden',
+    boxShadow: '0 25px 60px rgba(0,0,0,0.3)',
+    borderRadius: window.innerWidth >= 768 ? '40px' : '0px',
+  };
+
+  const outerWrap: React.CSSProperties = {
+    minHeight: '100vh',
+    backgroundColor: '#DCDCDC',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+  };
+
   if (showCreateFlow) {
     return (
-      <div className="min-h-screen bg-[#E5E5E5] flex items-center justify-center">
-        <div className="w-full max-w-[390px] h-screen max-h-[844px] relative overflow-hidden shadow-2xl rounded-[2px] md:rounded-[40px]">
+      <div style={outerWrap}>
+        <div style={phoneFrame}>
           <CardCreationFlow
             onComplete={handleCreateCard}
             onBack={() => setShowCreateFlow(false)}
@@ -224,8 +243,8 @@ export default function App() {
   }
 
   return (
-    <div className="min-h-screen bg-[#E5E5E5] flex items-center justify-center">
-    <div className="w-full max-w-[390px] h-screen max-h-[844px] bg-gradient-to-br from-[#FAFAFA] via-[#FAFAFA] to-[#F5F5F5] flex flex-col relative overflow-hidden shadow-2xl rounded-[2px] md:rounded-[40px]">
+    <div style={outerWrap}>
+    <div style={{ ...phoneFrame, display: 'flex', flexDirection: 'column', background: 'linear-gradient(135deg, #FAFAFA, #F5F5F5)' }}>
       {/* Main content */}
       <div className="flex-1 overflow-hidden">
         {activeTab === 'map' && (
