@@ -266,6 +266,3 @@ async def get_nearby_cards(lat: float, lng: float, radius_km: float = 5.0):
     return result
 
 
-@app.get("/health")
-async def health():
-    return {"status": "ok"}

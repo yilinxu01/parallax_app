@@ -259,6 +259,7 @@ export function CardCreationFlow({ onComplete, onBack }: CardCreationFlowProps) 
           lat: cardData.lat,
           lng: cardData.lng,
           image_url: imageUrl,
+          tags: cardData.tags.length > 0 ? cardData.tags : generateFallbackTags(cardData.location),
         }),
       });
     } catch { /* proceed even if backend is down */ }
