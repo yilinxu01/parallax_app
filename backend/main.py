@@ -28,6 +28,12 @@ app.add_middleware(
 
 client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
 
+
+@app.get("/health")
+def health():
+    return {"status": "ok"}
+
+
 # ---------------------------------------------------------------------------
 # File storage
 # ---------------------------------------------------------------------------
