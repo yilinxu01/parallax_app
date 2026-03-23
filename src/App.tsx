@@ -212,15 +212,20 @@ export default function App() {
 
   if (showCreateFlow) {
     return (
-      <CardCreationFlow
-        onComplete={handleCreateCard}
-        onBack={() => setShowCreateFlow(false)}
-      />
+      <div className="min-h-screen bg-[#E5E5E5] flex items-center justify-center">
+        <div className="w-full max-w-[390px] h-screen max-h-[844px] relative overflow-hidden shadow-2xl rounded-[2px] md:rounded-[40px]">
+          <CardCreationFlow
+            onComplete={handleCreateCard}
+            onBack={() => setShowCreateFlow(false)}
+          />
+        </div>
+      </div>
     );
   }
 
   return (
-    <div className="h-screen bg-gradient-to-br from-[#FAFAFA] via-[#FAFAFA] to-[#F5F5F5] flex flex-col">
+    <div className="min-h-screen bg-[#E5E5E5] flex items-center justify-center">
+    <div className="w-full max-w-[390px] h-screen max-h-[844px] bg-gradient-to-br from-[#FAFAFA] via-[#FAFAFA] to-[#F5F5F5] flex flex-col relative overflow-hidden shadow-2xl rounded-[2px] md:rounded-[40px]">
       {/* Main content */}
       <div className="flex-1 overflow-hidden">
         {activeTab === 'map' && (
@@ -278,6 +283,7 @@ export default function App() {
 
       {/* Toast notifications */}
       <Toaster />
+    </div>
     </div>
   );
 }
