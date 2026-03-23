@@ -1,0 +1,17 @@
+# Environment variables — never commit real keys
+.env
+backend/.env
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+backend/uploads/
+backend/cards.db
+
+# Node
+node_modules/
+dist/
+.DS_Store
+build/
+.claude/
