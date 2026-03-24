@@ -217,20 +217,16 @@ export default function App() {
   if (showSplash) {
     return (
       <div style={outerWrapStatic}>
-        <div style={{ ...phoneFrameStatic, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', background: 'linear-gradient(160deg, #1a1a1a 0%, #2d2d2d 100%)', padding: '48px 36px', textAlign: 'center' }}>
-          {/* Logo */}
-          <div style={{ marginBottom: '12px' }}>
-            <span style={{ fontSize: '11px', letterSpacing: '0.25em', textTransform: 'uppercase', color: 'rgba(255,255,255,0.4)', fontWeight: 500 }}>✦ New York City</span>
-          </div>
-          <h1 style={{ fontSize: '52px', fontWeight: 700, color: '#ffffff', letterSpacing: '-0.04em', lineHeight: 1, marginBottom: '20px', fontFamily: 'system-ui, -apple-system, sans-serif' }}>
+        <div style={{ ...phoneFrameStatic, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', background: '#FAFAFA', padding: '48px 36px', textAlign: 'center' }}>
+          <h1 style={{ fontSize: '52px', fontWeight: 700, color: '#1C1C1E', letterSpacing: '-0.04em', lineHeight: 1, marginBottom: '20px', fontFamily: 'system-ui, -apple-system, sans-serif' }}>
             Parallax
           </h1>
-          <p style={{ fontSize: '16px', color: 'rgba(255,255,255,0.55)', lineHeight: 1.6, marginBottom: '56px', maxWidth: '260px' }}>
+          <p style={{ fontSize: '16px', color: '#6B6B6B', lineHeight: 1.6, marginBottom: '56px', maxWidth: '260px' }}>
             Explore hidden stories tied to real places in your city.
           </p>
           <button
             onClick={() => { localStorage.setItem('hasSeenSplash', '1'); setShowSplash(false); }}
-            style={{ background: '#ffffff', color: '#1a1a1a', border: 'none', borderRadius: '100px', padding: '16px 40px', fontSize: '15px', fontWeight: 600, cursor: 'pointer', letterSpacing: '-0.01em' }}
+            style={{ background: '#1C1C1E', color: '#ffffff', border: 'none', borderRadius: '100px', padding: '16px 40px', fontSize: '15px', fontWeight: 600, cursor: 'pointer', letterSpacing: '-0.01em' }}
           >
             Start Exploring
           </button>
