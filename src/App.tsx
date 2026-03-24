@@ -25,6 +25,7 @@ interface Card {
 export default function App() {
   const [activeTab, setActiveTab] = useState<'map' | 'feed' | 'profile'>('map');
   const [showCreateFlow, setShowCreateFlow] = useState(false);
+  const [showSplash, setShowSplash] = useState(() => !localStorage.getItem('hasSeenSplash'));
   
   // Mock data for demonstration
   const [cards, setCards] = useState<Card[]>([
@@ -209,6 +210,34 @@ export default function App() {
     // Mock remix functionality - in real app this would open creation flow with base card
     console.log('Remixing card:', cardId);
   };
+
+  const outerWrapStatic: React.CSSProperties = { minHeight: '100vh', backgroundColor: '#DCDCDC', display: 'flex', alignItems: 'center', justifyContent: 'center' };
+  const phoneFrameStatic: React.CSSProperties = { width: '100%', maxWidth: '390px', height: '100vh', maxHeight: '844px', position: 'relative', overflow: 'hidden', boxShadow: '0 25px 60px rgba(0,0,0,0.3)', borderRadius: window.innerWidth >= 768 ? '40px' : '0px' };
+
+  if (showSplash) {
+    return (
+      <div style={outerWrapStatic}>
+        <div style={{ ...phoneFrameStatic, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', background: 'linear-gradient(160deg, #1a1a1a 0%, #2d2d2d 100%)', padding: '48px 36px', textAlign: 'center' }}>
+          {/* Logo */}
+          <div style={{ marginBottom: '12px' }}>
+            <span style={{ fontSize: '11px', letterSpacing: '0.25em', textTransform: 'uppercase', color: 'rgba(255,255,255,0.4)', fontWeight: 500 }}>✦ New York City</span>
+          </div>
+          <h1 style={{ fontSize: '52px', fontWeight: 700, color: '#ffffff', letterSpacing: '-0.04em', lineHeight: 1, marginBottom: '20px', fontFamily: 'system-ui, -apple-system, sans-serif' }}>
+            Parallax
+          </h1>
+          <p style={{ fontSize: '16px', color: 'rgba(255,255,255,0.55)', lineHeight: 1.6, marginBottom: '56px', maxWidth: '260px' }}>
+            Explore hidden stories tied to real places in your city.
+          </p>
+          <button
+            onClick={() => { localStorage.setItem('hasSeenSplash', '1'); setShowSplash(false); }}
+            style={{ background: '#ffffff', color: '#1a1a1a', border: 'none', borderRadius: '100px', padding: '16px 40px', fontSize: '15px', fontWeight: 600, cursor: 'pointer', letterSpacing: '-0.01em' }}
+          >
+            Start Exploring
+          </button>
+        </div>
+      </div>
+    );
+  }
 
   const phoneFrame: React.CSSProperties = {
     width: '100%',
