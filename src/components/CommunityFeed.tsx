@@ -54,7 +54,7 @@ export function CommunityFeed({ cards, onToggleLike, onRemix, onMessage }: Commu
       {/* Active discoverers */}
       <div className="px-6 py-5 bg-white border-b border-black/[0.06]">
         <h2 className="text-xs uppercase tracking-wider font-semibold mb-4 text-[#6B6B6B]">Active Now</h2>
-        <div className="flex gap-5">
+        <div className="flex gap-5 justify-center">
           {users.map((user) => (
             <div key={user.name} className="flex-shrink-0 text-center">
               <div className="w-14 h-14 bg-gradient-to-br from-[#1A1A1A] to-[#2A2A2A] rounded-full flex items-center justify-center text-white text-sm font-medium mb-2 shadow-premium">
