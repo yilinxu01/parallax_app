@@ -65,7 +65,7 @@ export function Messaging() {
     return (
       <div className="h-full flex flex-col bg-white">
         {/* Header */}
-        <div className="flex items-center gap-3 px-4 py-3 border-b border-black/[0.06] bg-white/95 backdrop-blur-sm">
+        <div className="flex items-center gap-3 px-4 py-4 bg-white/95 backdrop-blur-sm">
           <button onClick={() => setActiveConvo(null)} className="p-1 -ml-1 text-[#1A1A1A]">
             <ArrowLeft className="w-5 h-5" strokeWidth={1.5} />
           </button>
@@ -75,19 +75,19 @@ export function Messaging() {
           >
             {activeConvo.user.initials}
           </div>
-          <div className="flex-1 min-w-0">
-            <p className="text-[15px] font-semibold text-[#1A1A1A] tracking-tight leading-tight">{activeConvo.user.name}</p>
-            <div className="flex gap-2 mt-1">
-              <button style={{ display: 'flex', alignItems: 'center', gap: 3, fontSize: 11, color: '#6B6B6B', background: '#F5F5F5', border: 'none', borderRadius: 8, padding: '3px 8px', cursor: 'pointer' }}>
-                <MapPin size={11} strokeWidth={1.5} />
-                Share location
-              </button>
-              <button style={{ display: 'flex', alignItems: 'center', gap: 3, fontSize: 11, color: '#6B6B6B', background: '#F5F5F5', border: 'none', borderRadius: 8, padding: '3px 8px', cursor: 'pointer' }}>
-                <Video size={11} strokeWidth={1.5} />
-                Video call
-              </button>
-            </div>
-          </div>
+          <span className="text-[15px] font-semibold text-[#1A1A1A] tracking-tight">{activeConvo.user.name}</span>
+        </div>
+
+        {/* Action bar */}
+        <div style={{ display: 'flex', borderTop: '1px solid rgba(0,0,0,0.06)', borderBottom: '1px solid rgba(0,0,0,0.06)' }}>
+          <button style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6, padding: '11px 0', fontSize: 13, fontWeight: 500, color: '#1A1A1A', background: 'white', border: 'none', borderRight: '1px solid rgba(0,0,0,0.06)', cursor: 'pointer' }}>
+            <MapPin size={14} strokeWidth={1.5} />
+            Share Location
+          </button>
+          <button style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6, padding: '11px 0', fontSize: 13, fontWeight: 500, color: '#1A1A1A', background: 'white', border: 'none', cursor: 'pointer' }}>
+            <Video size={14} strokeWidth={1.5} />
+            Video Call
+          </button>
         </div>
 
         {/* Messages */}
