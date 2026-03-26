@@ -86,16 +86,16 @@ export function Messaging() {
         {/* Messages */}
         <div className="flex-1 overflow-y-auto px-4 py-4 space-y-3">
           {/* Shared card bubble */}
-          <div className="flex justify-center mb-4">
-            <div className="bg-[#F5F5F5] rounded-2xl overflow-hidden w-56 border border-black/[0.06]">
+          <div style={{ display: 'flex', justifyContent: 'center', marginBottom: 16 }}>
+            <div style={{ background: '#F5F5F5', borderRadius: 16, overflow: 'hidden', width: 200, border: '1px solid rgba(0,0,0,0.06)' }}>
               <img
                 src={activeConvo.cardPhoto}
                 alt={activeConvo.cardTitle}
-                className="w-full h-28 object-cover"
+                style={{ width: '100%', height: 110, objectFit: 'cover', display: 'block' }}
               />
-              <div className="px-3 py-2">
-                <p className="text-[11px] text-[#9CA3AF] tracking-tight mb-0.5">Shared a card</p>
-                <p className="text-xs font-semibold text-[#1A1A1A] tracking-tight leading-snug">
+              <div style={{ padding: '8px 12px 10px' }}>
+                <p style={{ fontSize: 11, color: '#9CA3AF', marginBottom: 2 }}>Shared a card</p>
+                <p style={{ fontSize: 12, fontWeight: 600, color: '#1A1A1A', lineHeight: 1.3 }}>
                   {activeConvo.cardTitle}
                 </p>
               </div>
@@ -105,15 +105,19 @@ export function Messaging() {
           {activeConvo.messages.map((msg, i) => (
             <div
               key={i}
-              className={`flex ${msg.from === 'me' ? 'justify-end' : 'justify-start'}`}
+              style={{ display: 'flex', justifyContent: msg.from === 'me' ? 'flex-end' : 'flex-start' }}
             >
               <div
-                className="max-w-[75%] px-4 py-2.5 rounded-2xl text-[14px] leading-snug"
                 style={{
+                  maxWidth: '72%',
+                  padding: '10px 14px',
+                  borderRadius: 18,
+                  fontSize: 14,
+                  lineHeight: 1.4,
                   background: msg.from === 'me' ? '#1C1C1E' : '#F0F0F0',
                   color: msg.from === 'me' ? '#fff' : '#1A1A1A',
-                  borderBottomRightRadius: msg.from === 'me' ? 4 : undefined,
-                  borderBottomLeftRadius: msg.from === 'them' ? 4 : undefined,
+                  borderBottomRightRadius: msg.from === 'me' ? 4 : 18,
+                  borderBottomLeftRadius: msg.from === 'them' ? 4 : 18,
                 }}
               >
                 {msg.text}
