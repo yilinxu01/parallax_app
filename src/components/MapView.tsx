@@ -396,62 +396,15 @@ export function MapView({ cards, savedCards = [], onToggleLike, onAddToCollectio
         </div>
       )}
 
-      {/* Single container: buttons on top, Hidden Spots bar below */}
+      {/* Single container: AR button on top-right, Hidden Spots bar below */}
       <div className="absolute bottom-6 left-6 right-6 flex flex-col gap-3">
-        <div className="flex flex-col gap-3" style={{ alignSelf: 'flex-end' }}>
+        <div style={{ alignSelf: 'flex-end' }}>
           <button
             className="w-12 h-12 rounded-xl bg-white shadow-premium border border-black/[0.06] hover:shadow-premium-md hover:bg-[#FAFAFA] text-[#1A1A1A] flex items-center justify-center transition-all"
             aria-label="AR Navigation"
           >
             <Navigation className="w-5 h-5" strokeWidth={2} />
           </button>
-          <div className="relative">
-            {/* Tooltip bubble */}
-            {showTooltip && (
-              <div
-                onClick={() => setShowTooltip(false)}
-                style={{
-                  position: 'absolute',
-                  right: '56px',
-                  top: '50%',
-                  transform: 'translateY(-50%)',
-                  whiteSpace: 'nowrap',
-                  background: 'rgba(30,30,30,0.82)',
-                  color: '#fff',
-                  fontSize: '12px',
-                  padding: '6px 11px',
-                  borderRadius: '10px',
-                  cursor: 'pointer',
-                  letterSpacing: '-0.01em',
-                  opacity: 0.9,
-                }}
-              >
-                Create your first story card
-                {/* arrow pointing right */}
-                <span style={{
-                  position: 'absolute',
-                  right: '-6px',
-                  top: '50%',
-                  transform: 'translateY(-50%)',
-                  width: 0, height: 0,
-                  borderTop: '5px solid transparent',
-                  borderBottom: '5px solid transparent',
-                  borderLeft: '6px solid rgba(30,30,30,0.82)',
-                }} />
-              </div>
-            )}
-            <button
-              onClick={() => {
-                localStorage.setItem('hasCreatedCard', '1');
-                setShowTooltip(false);
-                onCreateCard?.();
-              }}
-              className="w-12 h-12 rounded-2xl bg-gradient-to-br from-[#FF8A4C] to-[#FF7A3C] text-white flex items-center justify-center shadow-premium-lg hover:shadow-premium-md transition-all active:scale-95"
-              aria-label="Create new card"
-            >
-              <Plus className="w-5 h-5" strokeWidth={2.5} />
-            </button>
-          </div>
         </div>
         <div className="w-full bg-white/95 backdrop-blur-sm rounded-2xl p-4 shadow-premium border border-black/[0.06] pointer-events-none">
           <div className="flex items-center gap-3 mb-3">
