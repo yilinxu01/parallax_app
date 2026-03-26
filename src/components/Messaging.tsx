@@ -160,30 +160,29 @@ export function Messaging() {
           <button
             key={convo.id}
             onClick={() => setActiveConvo(convo)}
-            className="w-full flex items-center gap-3 px-6 py-4 hover:bg-[#FAFAFA] transition-colors text-left"
+            style={{ width: '100%', display: 'flex', alignItems: 'center', gap: 12, padding: '14px 24px', background: 'none', border: 'none', cursor: 'pointer', textAlign: 'left' }}
           >
-            <div className="relative flex-shrink-0">
+            <div style={{ position: 'relative', flexShrink: 0 }}>
               <div
-                className="w-11 h-11 rounded-full flex items-center justify-center text-white text-sm font-semibold"
-                style={{ background: convo.user.color }}
+                style={{ width: 44, height: 44, borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', background: convo.user.color, color: '#fff', fontSize: 14, fontWeight: 600 }}
               >
                 {convo.user.initials}
               </div>
               {convo.unread && (
-                <span className="absolute -top-0.5 -right-0.5 w-3 h-3 bg-[#3A7AFE] rounded-full border-2 border-white" />
+                <span style={{ position: 'absolute', top: -2, right: -2, width: 12, height: 12, background: '#3A7AFE', borderRadius: '50%', border: '2px solid white' }} />
               )}
             </div>
-            <div className="flex-1 min-w-0">
-              <div className="flex items-center justify-between mb-0.5">
-                <span className={`text-[14px] tracking-tight ${convo.unread ? 'font-semibold text-[#1A1A1A]' : 'font-medium text-[#1A1A1A]'}`}>
+            <div style={{ flex: 1, minWidth: 0, textAlign: 'left' }}>
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 2 }}>
+                <span style={{ fontSize: 14, fontWeight: convo.unread ? 600 : 500, color: '#1A1A1A' }}>
                   {convo.user.name}
                 </span>
-                <span className="text-xs text-[#9CA3AF]">{convo.time}</span>
+                <span style={{ fontSize: 11, color: '#9CA3AF' }}>{convo.time}</span>
               </div>
-              <p className="text-xs text-[#9CA3AF] tracking-tight truncate mb-0.5">
+              <p style={{ fontSize: 11, color: '#9CA3AF', marginBottom: 2, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                 re: {convo.cardTitle}
               </p>
-              <p className={`text-[13px] truncate tracking-tight ${convo.unread ? 'text-[#1A1A1A] font-medium' : 'text-[#9CA3AF]'}`}>
+              <p style={{ fontSize: 13, color: convo.unread ? '#1A1A1A' : '#9CA3AF', fontWeight: convo.unread ? 500 : 400, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                 {convo.lastMessage}
               </p>
             </div>

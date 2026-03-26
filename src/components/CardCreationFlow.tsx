@@ -278,7 +278,7 @@ export function CardCreationFlow({ onComplete, onBack }: CardCreationFlowProps) 
   const currentStepData = steps[currentStep];
 
   return (
-    <div className={`min-h-screen ${currentStepData.bg} flex flex-col items-center justify-center p-6 text-white relative`}>
+    <div className={`h-full ${currentStepData.bg} flex flex-col items-center justify-center p-6 text-white relative overflow-y-auto`}>
       {/* Back button */}
       {currentStep > 0 && (
         <button
@@ -326,7 +326,7 @@ export function CardCreationFlow({ onComplete, onBack }: CardCreationFlowProps) 
 
             {/* Webcam live view */}
             {showWebcam ? (
-              <div className="relative w-full aspect-square rounded-3xl overflow-hidden bg-black">
+              <div className="relative w-full aspect-[4/3] rounded-3xl overflow-hidden bg-black">
                 <video ref={videoRef} autoPlay playsInline className="w-full h-full object-cover" />
                 {/* Capture button */}
                 <button
@@ -344,7 +344,7 @@ export function CardCreationFlow({ onComplete, onBack }: CardCreationFlowProps) 
             ) : (
               <>
                 {/* Photo preview / placeholder */}
-                <div className="relative w-full aspect-square rounded-3xl overflow-hidden bg-black/20 flex items-center justify-center mb-4">
+                <div className="relative w-full aspect-[4/3] rounded-3xl overflow-hidden bg-black/20 flex items-center justify-center mb-4">
                   {cardData.photo ? (
                     <img src={cardData.photo} alt="preview" className="w-full h-full object-cover" />
                   ) : (
