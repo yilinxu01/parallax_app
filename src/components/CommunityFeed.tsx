@@ -27,7 +27,7 @@ export function CommunityFeed({ cards, onToggleLike, onRemix, onMessage }: Commu
   const users = [
     { name: 'Maya', avatar: 'M', topCards: ['Street Art', 'Hidden Cafes', 'Rooftops'] },
     { name: 'Alex', avatar: 'A', topCards: ['Museums', 'Sculptures', 'Galleries'] },
-    { name: 'Sam', avatar: 'S', topCards: ['Urban Exploration', 'Tunnels', 'Bridges'] },
+    { name: 'Sam', avatar: 'S', topCards: ['Urbex', 'Tunnels', 'Bridges'] },
   ];
 
   const formatTimeAgo = (timestamp: string) => {
@@ -56,7 +56,7 @@ export function CommunityFeed({ cards, onToggleLike, onRemix, onMessage }: Commu
         <h2 className="text-xs uppercase tracking-wider font-semibold mb-4 text-[#6B6B6B]">Active Now</h2>
         <div className="flex gap-5">
           {users.map((user) => (
-            <div key={user.name} className="flex-shrink-0 text-left">
+            <div key={user.name} className="flex-shrink-0 text-center">
               <div className="w-14 h-14 bg-gradient-to-br from-[#1A1A1A] to-[#2A2A2A] rounded-full flex items-center justify-center text-white text-sm font-medium mb-2 shadow-premium">
                 {user.avatar}
               </div>
