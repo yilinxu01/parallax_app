@@ -83,12 +83,12 @@ export function CommunityFeed({ cards, onToggleLike, onRemix, onMessage }: Commu
                   </div>
                   <div className="flex-1">
                     <p className="text-sm font-medium text-[#1A1A1A] tracking-tight">{user.name}</p>
-                    <div className="flex items-center text-xs text-[#9CA3AF] tracking-tight">
-                      <Clock className="w-3 h-3 mr-1" strokeWidth={1.5} />
-                      {formatTimeAgo(card.timestamp)}
-                      <span className="mx-1.5">·</span>
-                      <MapPin className="w-3 h-3 mr-1" strokeWidth={1.5} />
-                      <span>{card.location}</span>
+                    <div className="flex items-center text-xs text-[#9CA3AF] tracking-tight min-w-0">
+                      <Clock className="w-3 h-3 mr-1 flex-shrink-0" strokeWidth={1.5} />
+                      <span className="flex-shrink-0">{formatTimeAgo(card.timestamp)}</span>
+                      <span className="mx-1.5 flex-shrink-0">·</span>
+                      <MapPin className="w-3 h-3 mr-1 flex-shrink-0" strokeWidth={1.5} />
+                      <span className="truncate">{card.location}</span>
                     </div>
                   </div>
                 </div>
