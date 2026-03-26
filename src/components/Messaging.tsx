@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { ArrowLeft, Send } from 'lucide-react';
+import { ArrowLeft, Send, MapPin, Video } from 'lucide-react';
 
 interface Conversation {
   id: number;
@@ -65,22 +65,29 @@ export function Messaging() {
     return (
       <div className="h-full flex flex-col bg-white">
         {/* Header */}
-        <div className="flex items-center gap-3 px-4 py-4 border-b border-black/[0.06] bg-white/95 backdrop-blur-sm">
-          <button
-            onClick={() => setActiveConvo(null)}
-            className="p-1 -ml-1 text-[#1A1A1A]"
-          >
+        <div className="flex items-center gap-3 px-4 py-3 border-b border-black/[0.06] bg-white/95 backdrop-blur-sm">
+          <button onClick={() => setActiveConvo(null)} className="p-1 -ml-1 text-[#1A1A1A]">
             <ArrowLeft className="w-5 h-5" strokeWidth={1.5} />
           </button>
           <div
-            className="w-8 h-8 rounded-full flex items-center justify-center text-white text-xs font-semibold"
+            className="w-8 h-8 rounded-full flex items-center justify-center text-white text-xs font-semibold flex-shrink-0"
             style={{ background: activeConvo.user.color }}
           >
             {activeConvo.user.initials}
           </div>
-          <span className="text-[15px] font-semibold text-[#1A1A1A] tracking-tight">
-            {activeConvo.user.name}
-          </span>
+          <div className="flex-1 min-w-0">
+            <p className="text-[15px] font-semibold text-[#1A1A1A] tracking-tight leading-tight">{activeConvo.user.name}</p>
+            <div className="flex gap-2 mt-1">
+              <button style={{ display: 'flex', alignItems: 'center', gap: 3, fontSize: 11, color: '#6B6B6B', background: '#F5F5F5', border: 'none', borderRadius: 8, padding: '3px 8px', cursor: 'pointer' }}>
+                <MapPin size={11} strokeWidth={1.5} />
+                Share location
+              </button>
+              <button style={{ display: 'flex', alignItems: 'center', gap: 3, fontSize: 11, color: '#6B6B6B', background: '#F5F5F5', border: 'none', borderRadius: 8, padding: '3px 8px', cursor: 'pointer' }}>
+                <Video size={11} strokeWidth={1.5} />
+                Video call
+              </button>
+            </div>
+          </div>
         </div>
 
         {/* Messages */}
