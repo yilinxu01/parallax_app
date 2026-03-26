@@ -1,11 +1,12 @@
 import React, { useState } from 'react';
-import { Map, Users, User, Plus, MapPin, Navigation } from 'lucide-react';
+import { Map, Users, User, Plus, MapPin, Navigation, MessageCircle } from 'lucide-react';
 
 const PIN_COLORS = ['#FF8A4C', '#3A7AFE', '#6BAF73', '#8B7AF7', '#FF6B9D', '#F59E0B', '#10B981', '#EF4444', '#8B5CF6', '#06B6D4'];
 import { CardCreationFlow } from './components/CardCreationFlow';
 import { MapView } from './components/MapView';
 import { CommunityFeed } from './components/CommunityFeed';
 import { Profile } from './components/Profile';
+import { Messaging } from './components/Messaging';
 import { Toaster } from './components/ui/sonner';
 import { toast } from 'sonner@2.0.3';
 
@@ -23,7 +24,7 @@ interface Card {
 }
 
 export default function App() {
-  const [activeTab, setActiveTab] = useState<'map' | 'feed' | 'profile'>('map');
+  const [activeTab, setActiveTab] = useState<'map' | 'feed' | 'messages' | 'profile'>('map');
   const [showCreateFlow, setShowCreateFlow] = useState(false);
   const [showSplash, setShowSplash] = useState(() => !localStorage.getItem('hasSeenSplash'));
   
@@ -288,7 +289,11 @@ export default function App() {
             cards={cards}
             onToggleLike={handleToggleLike}
             onRemix={handleRemix}
+            onMessage={() => setActiveTab('messages')}
           />
+        )}
+        {activeTab === 'messages' && (
+          <Messaging />
         )}
         {activeTab === 'profile' && (
           <Profile
@@ -299,28 +304,42 @@ export default function App() {
       </div>
 
       {/* Bottom navigation */}
-      <div className="bg-white border-t border-black/[0.06] px-6 pb-6 pt-3 safe-area-pb">
-        <div className="flex items-center justify-around max-w-md mx-auto">
+      <div className="bg-white border-t border-black/[0.06] px-4 pb-6 pt-2 safe-area-pb">
+        <div className="flex items-end justify-around max-w-md mx-auto">
           <button
             onClick={() => setActiveTab('map')}
-            className={`flex flex-col items-center gap-1 py-2 px-4 rounded-xl transition-all duration-200 ${activeTab === 'map' ? 'text-[#1A1A1A]' : 'text-[#9CA3AF] hover:text-[#6B6B6B]'}`}
+            className={`flex flex-col items-center gap-1 py-2 px-3 rounded-xl transition-all duration-200 ${activeTab === 'map' ? 'text-[#1A1A1A]' : 'text-[#9CA3AF]'}`}
           >
             <Map className="w-5 h-5" strokeWidth={activeTab === 'map' ? 2 : 1.5} />
-            <span className="text-[11px] font-medium tracking-tight">{activeTab === 'map' ? 'Map' : ''}</span>
+            <span className="text-[10px] font-medium tracking-tight">{activeTab === 'map' ? 'Map' : ''}</span>
           </button>
           <button
             onClick={() => setActiveTab('feed')}
-            className={`flex flex-col items-center gap-1 py-2 px-4 rounded-xl transition-all duration-200 ${activeTab === 'feed' ? 'text-[#1A1A1A]' : 'text-[#9CA3AF] hover:text-[#6B6B6B]'}`}
+            className={`flex flex-col items-center gap-1 py-2 px-3 rounded-xl transition-all duration-200 ${activeTab === 'feed' ? 'text-[#1A1A1A]' : 'text-[#9CA3AF]'}`}
           >
             <Users className="w-5 h-5" strokeWidth={activeTab === 'feed' ? 2 : 1.5} />
-            <span className="text-[11px] font-medium tracking-tight">{activeTab === 'feed' ? 'Feed' : ''}</span>
+            <span className="text-[10px] font-medium tracking-tight">{activeTab === 'feed' ? 'Feed' : ''}</span>
+          </button>
+          {/* Center create button — elevated */}
+          <button
+            onClick={() => setShowCreateFlow(true)}
+            style={{ marginBottom: '6px', background: '#1C1C1E', borderRadius: '50%', width: 48, height: 48, display: 'flex', alignItems: 'center', justifyContent: 'center', border: 'none', cursor: 'pointer', flexShrink: 0, boxShadow: '0 4px 14px rgba(0,0,0,0.25)' }}
+          >
+            <Plus className="w-5 h-5" color="#fff" strokeWidth={2} />
+          </button>
+          <button
+            onClick={() => setActiveTab('messages')}
+            className={`flex flex-col items-center gap-1 py-2 px-3 rounded-xl transition-all duration-200 ${activeTab === 'messages' ? 'text-[#1A1A1A]' : 'text-[#9CA3AF]'}`}
+          >
+            <MessageCircle className="w-5 h-5" strokeWidth={activeTab === 'messages' ? 2 : 1.5} />
+            <span className="text-[10px] font-medium tracking-tight">{activeTab === 'messages' ? 'Messages' : ''}</span>
           </button>
           <button
             onClick={() => setActiveTab('profile')}
-            className={`flex flex-col items-center gap-1 py-2 px-4 rounded-xl transition-all duration-200 ${activeTab === 'profile' ? 'text-[#1A1A1A]' : 'text-[#9CA3AF] hover:text-[#6B6B6B]'}`}
+            className={`flex flex-col items-center gap-1 py-2 px-3 rounded-xl transition-all duration-200 ${activeTab === 'profile' ? 'text-[#1A1A1A]' : 'text-[#9CA3AF]'}`}
           >
             <User className="w-5 h-5" strokeWidth={activeTab === 'profile' ? 2 : 1.5} />
-            <span className="text-[11px] font-medium tracking-tight">{activeTab === 'profile' ? 'Profile' : ''}</span>
+            <span className="text-[10px] font-medium tracking-tight">{activeTab === 'profile' ? 'Profile' : ''}</span>
           </button>
         </div>
       </div>

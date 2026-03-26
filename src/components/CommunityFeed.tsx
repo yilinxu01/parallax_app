@@ -19,9 +19,10 @@ interface CommunityFeedProps {
   cards: Card[];
   onToggleLike: (cardId: number) => void;
   onRemix: (cardId: number) => void;
+  onMessage?: () => void;
 }
 
-export function CommunityFeed({ cards, onToggleLike, onRemix }: CommunityFeedProps) {
+export function CommunityFeed({ cards, onToggleLike, onRemix, onMessage }: CommunityFeedProps) {
   // Mock user data
   const users = [
     { name: 'Maya', avatar: 'M', topCards: ['Street Art', 'Hidden Cafes', 'Rooftops'] },
@@ -137,9 +138,9 @@ export function CommunityFeed({ cards, onToggleLike, onRemix }: CommunityFeedPro
                         <span className="text-sm font-medium">{card.likes}</span>
                       </button>
                       
-                      <button className="flex items-center gap-1.5 text-[#9CA3AF] hover:text-[#6B6B6B] transition-colors">
+                      <button onClick={onMessage} className="flex items-center gap-1.5 text-[#9CA3AF] hover:text-[#6B6B6B] transition-colors">
                         <MessageCircle className="w-5 h-5" strokeWidth={1.5} />
-                        <span className="text-sm font-medium">0</span>
+                        <span className="text-sm font-medium">Message</span>
                       </button>
                     </div>
                   </div>

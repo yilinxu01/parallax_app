@@ -1,0 +1,191 @@
+import React, { useState } from 'react';
+import { ArrowLeft, Send } from 'lucide-react';
+
+interface Conversation {
+  id: number;
+  user: { name: string; initials: string; color: string };
+  cardTitle: string;
+  cardPhoto: string;
+  lastMessage: string;
+  time: string;
+  unread: boolean;
+  messages: { from: 'me' | 'them'; text: string }[];
+}
+
+const CONVERSATIONS: Conversation[] = [
+  {
+    id: 1,
+    user: { name: 'Sarah K.', initials: 'SK', color: '#8B7AF7' },
+    cardTitle: 'The Hidden Jazz Club on 10th',
+    cardPhoto: 'https://images.unsplash.com/photo-1493225457124-a3eb161ffa5f?auto=format&fit=crop&w=400&q=80',
+    lastMessage: 'Love this spot! Have you been back recently?',
+    time: '2m ago',
+    unread: true,
+    messages: [
+      { from: 'them', text: 'Just saw your card about the jazz club — incredible find 🎷' },
+      { from: 'me', text: 'Right?? I stumbled on it totally by accident' },
+      { from: 'them', text: 'Love this spot! Have you been back recently?' },
+    ],
+  },
+  {
+    id: 2,
+    user: { name: 'Marcus T.', initials: 'MT', color: '#3A7AFE' },
+    cardTitle: 'Rooftop Greenhouse, Bushwick',
+    cardPhoto: 'https://images.unsplash.com/photo-1543168256-418811576931?auto=format&fit=crop&w=400&q=80',
+    lastMessage: 'How did you find this place?!',
+    time: '18m ago',
+    unread: true,
+    messages: [
+      { from: 'them', text: 'Wait — that rooftop is real?? I thought it was staged' },
+      { from: 'me', text: 'Completely real haha, no lock on the elevator either' },
+      { from: 'them', text: 'How did you find this place?!' },
+    ],
+  },
+  {
+    id: 3,
+    user: { name: 'Yuki L.', initials: 'YL', color: '#6BAF73' },
+    cardTitle: 'The Bookshop Cat',
+    cardPhoto: 'https://images.unsplash.com/photo-1481627834876-b7833e8f5570?auto=format&fit=crop&w=400&q=80',
+    lastMessage: 'Thanks for the tip, went yesterday 🌿',
+    time: '2h ago',
+    unread: false,
+    messages: [
+      { from: 'me', text: 'The cat is still there btw, saw it this morning' },
+      { from: 'them', text: 'No way!! I need to go back' },
+      { from: 'them', text: 'Thanks for the tip, went yesterday 🌿' },
+    ],
+  },
+];
+
+export function Messaging() {
+  const [activeConvo, setActiveConvo] = useState<Conversation | null>(null);
+  const [inputText, setInputText] = useState('');
+
+  if (activeConvo) {
+    return (
+      <div className="h-full flex flex-col bg-white">
+        {/* Header */}
+        <div className="flex items-center gap-3 px-4 py-4 border-b border-black/[0.06] bg-white/95 backdrop-blur-sm">
+          <button
+            onClick={() => setActiveConvo(null)}
+            className="p-1 -ml-1 text-[#1A1A1A]"
+          >
+            <ArrowLeft className="w-5 h-5" strokeWidth={1.5} />
+          </button>
+          <div
+            className="w-8 h-8 rounded-full flex items-center justify-center text-white text-xs font-semibold"
+            style={{ background: activeConvo.user.color }}
+          >
+            {activeConvo.user.initials}
+          </div>
+          <span className="text-[15px] font-semibold text-[#1A1A1A] tracking-tight">
+            {activeConvo.user.name}
+          </span>
+        </div>
+
+        {/* Messages */}
+        <div className="flex-1 overflow-y-auto px-4 py-4 space-y-3">
+          {/* Shared card bubble */}
+          <div className="flex justify-center mb-4">
+            <div className="bg-[#F5F5F5] rounded-2xl overflow-hidden w-56 border border-black/[0.06]">
+              <img
+                src={activeConvo.cardPhoto}
+                alt={activeConvo.cardTitle}
+                className="w-full h-28 object-cover"
+              />
+              <div className="px-3 py-2">
+                <p className="text-[11px] text-[#9CA3AF] tracking-tight mb-0.5">Shared a card</p>
+                <p className="text-xs font-semibold text-[#1A1A1A] tracking-tight leading-snug">
+                  {activeConvo.cardTitle}
+                </p>
+              </div>
+            </div>
+          </div>
+
+          {activeConvo.messages.map((msg, i) => (
+            <div
+              key={i}
+              className={`flex ${msg.from === 'me' ? 'justify-end' : 'justify-start'}`}
+            >
+              <div
+                className="max-w-[75%] px-4 py-2.5 rounded-2xl text-[14px] leading-snug"
+                style={{
+                  background: msg.from === 'me' ? '#1C1C1E' : '#F0F0F0',
+                  color: msg.from === 'me' ? '#fff' : '#1A1A1A',
+                  borderBottomRightRadius: msg.from === 'me' ? 4 : undefined,
+                  borderBottomLeftRadius: msg.from === 'them' ? 4 : undefined,
+                }}
+              >
+                {msg.text}
+              </div>
+            </div>
+          ))}
+        </div>
+
+        {/* Input */}
+        <div className="px-4 py-3 border-t border-black/[0.06] bg-white flex items-center gap-2">
+          <input
+            type="text"
+            value={inputText}
+            onChange={e => setInputText(e.target.value)}
+            placeholder="Message..."
+            className="flex-1 bg-[#F5F5F5] rounded-full px-4 py-2.5 text-[14px] text-[#1A1A1A] outline-none placeholder:text-[#9CA3AF]"
+          />
+          <button
+            className="w-9 h-9 rounded-full flex items-center justify-center"
+            style={{ background: inputText.trim() ? '#1C1C1E' : '#E5E5E5' }}
+          >
+            <Send className="w-4 h-4" color={inputText.trim() ? '#fff' : '#9CA3AF'} strokeWidth={1.5} />
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="h-full bg-[#FAFAFA] overflow-y-auto">
+      {/* Header */}
+      <div className="sticky top-0 bg-white/95 backdrop-blur-sm border-b border-black/[0.06] px-6 py-4 z-10">
+        <h1 className="text-xl font-semibold text-[#1A1A1A] tracking-tight">Messages</h1>
+        <p className="text-sm text-[#6B6B6B] tracking-tight">Connections from story cards</p>
+      </div>
+
+      {/* Conversations */}
+      <div className="bg-white divide-y divide-black/[0.04]">
+        {CONVERSATIONS.map(convo => (
+          <button
+            key={convo.id}
+            onClick={() => setActiveConvo(convo)}
+            className="w-full flex items-center gap-3 px-6 py-4 hover:bg-[#FAFAFA] transition-colors text-left"
+          >
+            <div className="relative flex-shrink-0">
+              <div
+                className="w-11 h-11 rounded-full flex items-center justify-center text-white text-sm font-semibold"
+                style={{ background: convo.user.color }}
+              >
+                {convo.user.initials}
+              </div>
+              {convo.unread && (
+                <span className="absolute -top-0.5 -right-0.5 w-3 h-3 bg-[#3A7AFE] rounded-full border-2 border-white" />
+              )}
+            </div>
+            <div className="flex-1 min-w-0">
+              <div className="flex items-center justify-between mb-0.5">
+                <span className={`text-[14px] tracking-tight ${convo.unread ? 'font-semibold text-[#1A1A1A]' : 'font-medium text-[#1A1A1A]'}`}>
+                  {convo.user.name}
+                </span>
+                <span className="text-xs text-[#9CA3AF]">{convo.time}</span>
+              </div>
+              <p className="text-xs text-[#9CA3AF] tracking-tight truncate mb-0.5">
+                re: {convo.cardTitle}
+              </p>
+              <p className={`text-[13px] truncate tracking-tight ${convo.unread ? 'text-[#1A1A1A] font-medium' : 'text-[#9CA3AF]'}`}>
+                {convo.lastMessage}
+              </p>
+            </div>
+          </button>
+        ))}
+      </div>
+    </div>
+  );
+}
