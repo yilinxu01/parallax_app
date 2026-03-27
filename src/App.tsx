@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
-import { Map, Users, User, Plus, MapPin, Navigation, MessageCircle } from 'lucide-react';
+import { Map, Users, User, Plus, MapPin, Navigation, MessageCircle, ArrowLeft, UserPlus, X } from 'lucide-react';
+import { USERS, CARD_AUTHOR_IDS, getUser, type UserProfile } from './data/users';
 
 const PIN_COLORS = ['#FF8A4C', '#3A7AFE', '#6BAF73', '#8B7AF7', '#FF6B9D', '#F59E0B', '#10B981', '#EF4444', '#8B5CF6', '#06B6D4'];
 import { CardCreationFlow } from './components/CardCreationFlow';
@@ -27,6 +28,7 @@ export default function App() {
   const [activeTab, setActiveTab] = useState<'map' | 'feed' | 'messages' | 'profile'>('map');
   const [showCreateFlow, setShowCreateFlow] = useState(false);
   const [showSplash, setShowSplash] = useState(() => !localStorage.getItem('hasSeenSplash'));
+  const [viewingUserProfile, setViewingUserProfile] = useState<UserProfile | null>(null);
   
   // Mock data for demonstration
   const [cards, setCards] = useState<Card[]>([
@@ -290,10 +292,11 @@ export default function App() {
             onToggleLike={handleToggleLike}
             onRemix={handleRemix}
             onMessage={() => setActiveTab('messages')}
+            onViewProfile={(user) => setViewingUserProfile(user)}
           />
         )}
         {activeTab === 'messages' && (
-          <Messaging />
+          <Messaging onViewProfile={(user) => setViewingUserProfile(user)} />
         )}
         {activeTab === 'profile' && (
           <Profile
@@ -303,48 +306,120 @@ export default function App() {
         )}
       </div>
 
+      {/* User profile overlay — shared across all tabs */}
+      {viewingUserProfile && (() => {
+        const user = viewingUserProfile;
+        const userCards = cards.filter((_, i) => {
+          const authorId = CARD_AUTHOR_IDS[i];
+          return authorId && getUser(authorId).name === user.name;
+        });
+        const mutualCount = user.isFriend ? Math.floor(user.name.length * 1.3) + 2 : 0;
+        return (
+          <div style={{ position: 'absolute', inset: 0, zIndex: 1200, background: '#FAFAFA', display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
+            <div style={{ background: 'linear-gradient(135deg, #1A1A1A 0%, #333 100%)', padding: '40px 20px 24px', position: 'relative', flexShrink: 0 }}>
+              <button onClick={() => setViewingUserProfile(null)} style={{ position: 'absolute', top: 16, left: 16, background: 'rgba(255,255,255,0.15)', border: 'none', borderRadius: 12, padding: '6px 14px', cursor: 'pointer', fontSize: 13, fontWeight: 500, color: '#fff', display: 'flex', alignItems: 'center', gap: 4 }}>
+                ← Back
+              </button>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 16, marginTop: 24 }}>
+                <img src={user.avatar} alt={user.name} style={{ width: 56, height: 56, borderRadius: '50%', objectFit: 'cover', border: '3px solid rgba(255,255,255,0.2)' }} />
+                <div style={{ flex: 1 }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                    <span style={{ fontSize: 20, fontWeight: 700, color: '#fff' }}>{user.name}</span>
+                    {user.isFriend && <span style={{ fontSize: 10, background: 'rgba(16,185,129,0.25)', color: '#34D399', padding: '2px 8px', borderRadius: 999, fontWeight: 600 }}>Friend</span>}
+                  </div>
+                  {user.bio && <div style={{ fontSize: 13, color: 'rgba(255,255,255,0.55)', marginTop: 4 }}>{user.bio}</div>}
+                </div>
+              </div>
+              <div style={{ display: 'flex', gap: 24, marginTop: 20 }}>
+                <div><span style={{ fontSize: 16, fontWeight: 700, color: '#fff' }}>{user.cardCount || 0}</span><span style={{ fontSize: 12, color: 'rgba(255,255,255,0.45)', marginLeft: 4 }}>spots</span></div>
+                <div><span style={{ fontSize: 16, fontWeight: 700, color: '#fff' }}>{mutualCount}</span><span style={{ fontSize: 12, color: 'rgba(255,255,255,0.45)', marginLeft: 4 }}>mutual</span></div>
+              </div>
+              <div style={{ display: 'flex', gap: 8, marginTop: 16 }}>
+                {user.isFriend ? (
+                  <button onClick={() => { setViewingUserProfile(null); setActiveTab('messages'); }} style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6, background: 'rgba(255,255,255,0.15)', color: '#fff', border: '1px solid rgba(255,255,255,0.2)', borderRadius: 12, padding: '10px 0', fontSize: 13, fontWeight: 600, cursor: 'pointer', backdropFilter: 'blur(8px)' }}>
+                    <MessageCircle style={{ width: 14, height: 14 }} /> Message
+                  </button>
+                ) : (
+                  <button style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6, background: '#fff', color: '#1A1A1A', border: 'none', borderRadius: 12, padding: '10px 0', fontSize: 13, fontWeight: 600, cursor: 'pointer' }}>
+                    <UserPlus style={{ width: 14, height: 14 }} /> Add Friend
+                  </button>
+                )}
+              </div>
+            </div>
+            <div style={{ flex: 1, overflowY: 'auto', padding: '16px 16px 32px' }}>
+              <div style={{ fontSize: 13, fontWeight: 600, color: '#6B6B6B', marginBottom: 12 }}>{userCards.length > 0 ? `${userCards.length} Discoveries` : 'No spots yet'}</div>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
+                {userCards.map(card => (
+                  <div key={card.id} style={{ background: '#fff', border: '1px solid rgba(0,0,0,0.06)', borderRadius: 16, overflow: 'hidden', boxShadow: '0 1px 4px rgba(0,0,0,0.06)' }}>
+                    <div style={{ width: '100%', height: 100, overflow: 'hidden' }}>
+                      <img src={card.photo} alt={card.title} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                    </div>
+                    <div style={{ padding: '10px 10px 12px' }}>
+                      <div style={{ fontSize: 12, fontWeight: 600, color: '#1A1A1A', lineHeight: 1.3, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{card.title}</div>
+                      <div style={{ fontSize: 10, color: '#9CA3AF', marginTop: 3 }}>{card.location.split(',')[0]}</div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+              {(user.cardCount || 0) > userCards.length && (
+                <div style={{ marginTop: 16, textAlign: 'center', fontSize: 12, color: '#9CA3AF', padding: '16px 0' }}>+ {(user.cardCount || 0) - userCards.length} more spots in other cities</div>
+              )}
+            </div>
+          </div>
+        );
+      })()}
+
       {/* Bottom navigation */}
       <div className="bg-white border-t border-black/[0.06] px-4 pb-6 pt-2 safe-area-pb">
-        <div className="flex items-end justify-around max-w-md mx-auto">
-          <button
-            onClick={() => setActiveTab('map')}
-            className={`flex flex-col items-center gap-1 py-2 px-3 rounded-xl transition-all duration-200 ${activeTab === 'map' ? 'text-[#1A1A1A]' : 'text-[#9CA3AF]'}`}
-          >
-            <Map className="w-5 h-5" strokeWidth={activeTab === 'map' ? 2 : 1.5} />
-            <span className="text-[10px] font-medium tracking-tight">{activeTab === 'map' ? 'Map' : ''}</span>
-          </button>
-          <button
-            onClick={() => setActiveTab('feed')}
-            className={`flex flex-col items-center gap-1 py-2 px-3 rounded-xl transition-all duration-200 ${activeTab === 'feed' ? 'text-[#1A1A1A]' : 'text-[#9CA3AF]'}`}
-          >
-            <Users className="w-5 h-5" strokeWidth={activeTab === 'feed' ? 2 : 1.5} />
-            <span className="text-[10px] font-medium tracking-tight">{activeTab === 'feed' ? 'Feed' : ''}</span>
-          </button>
-          {/* Center create button — elevated */}
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-around', maxWidth: '28rem', margin: '0 auto' }}>
+          {[
+            { id: 'map', label: 'Map', Icon: Map },
+            { id: 'feed', label: 'Feed', Icon: Users },
+          ].map(({ id, label, Icon }) => (
+            <button
+              key={id}
+              onClick={() => setActiveTab(id as 'map' | 'feed')}
+              style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 2, padding: '8px 12px', borderRadius: 12, border: 'none', background: 'none', cursor: 'pointer', color: activeTab === id ? '#1A1A1A' : '#9CA3AF', minWidth: 56 }}
+            >
+              <Icon style={{ width: 20, height: 20 }} strokeWidth={activeTab === id ? 2 : 1.5} />
+              <span style={{ fontSize: 10, fontWeight: 500, letterSpacing: '0.025em', opacity: activeTab === id ? 1 : 0 }}>{label}</span>
+            </button>
+          ))}
+          {/* Center create button — always fixed */}
           <button
             onClick={() => setShowCreateFlow(true)}
-            style={{ marginBottom: '6px', background: '#1C1C1E', borderRadius: '50%', width: 48, height: 48, display: 'flex', alignItems: 'center', justifyContent: 'center', border: 'none', cursor: 'pointer', flexShrink: 0, boxShadow: '0 4px 14px rgba(0,0,0,0.25)' }}
+            style={{ marginBottom: 6, background: '#1C1C1E', borderRadius: '50%', width: 48, height: 48, display: 'flex', alignItems: 'center', justifyContent: 'center', border: 'none', cursor: 'pointer', flexShrink: 0, boxShadow: '0 4px 14px rgba(0,0,0,0.25)' }}
           >
-            <Plus className="w-5 h-5" color="#fff" strokeWidth={2} />
+            <Plus style={{ width: 20, height: 20 }} color="#fff" strokeWidth={2} />
           </button>
-          <button
-            onClick={() => setActiveTab('messages')}
-            className={`flex flex-col items-center gap-1 py-2 px-3 rounded-xl transition-all duration-200 ${activeTab === 'messages' ? 'text-[#1A1A1A]' : 'text-[#9CA3AF]'}`}
-          >
-            <MessageCircle className="w-5 h-5" strokeWidth={activeTab === 'messages' ? 2 : 1.5} />
-            <span className="text-[10px] font-medium tracking-tight">{activeTab === 'messages' ? 'Messages' : ''}</span>
-          </button>
-          <button
-            onClick={() => setActiveTab('profile')}
-            className={`flex flex-col items-center gap-1 py-2 px-3 rounded-xl transition-all duration-200 ${activeTab === 'profile' ? 'text-[#1A1A1A]' : 'text-[#9CA3AF]'}`}
-          >
-            <User className="w-5 h-5" strokeWidth={activeTab === 'profile' ? 2 : 1.5} />
-            <span className="text-[10px] font-medium tracking-tight">{activeTab === 'profile' ? 'Profile' : ''}</span>
-          </button>
+          {[
+            { id: 'messages', label: 'Messages', Icon: MessageCircle },
+            { id: 'profile', label: 'Profile', Icon: User },
+          ].map(({ id, label, Icon }) => (
+            <button
+              key={id}
+              onClick={() => setActiveTab(id as 'messages' | 'profile')}
+              style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 2, padding: '8px 12px', borderRadius: 12, border: 'none', background: 'none', cursor: 'pointer', color: activeTab === id ? '#1A1A1A' : '#9CA3AF', minWidth: 56 }}
+            >
+              <Icon style={{ width: 20, height: 20 }} strokeWidth={activeTab === id ? 2 : 1.5} />
+              <span style={{ fontSize: 10, fontWeight: 500, letterSpacing: '0.025em', opacity: activeTab === id ? 1 : 0 }}>{label}</span>
+            </button>
+          ))}
         </div>
       </div>
 
-      {/* Toast notifications */}
+      {/* Toast notifications — constrain Sonner portal to phone frame */}
+      <style>{`
+        [data-sonner-toaster] {
+          position: absolute !important;
+          bottom: 90px !important;
+          top: auto !important;
+          left: 50% !important;
+          right: auto !important;
+          transform: translateX(-50%) !important;
+          max-width: 356px !important;
+        }
+      `}</style>
       <Toaster />
     </div>
     </div>

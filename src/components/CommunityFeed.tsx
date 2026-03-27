@@ -2,6 +2,7 @@ import React from 'react';
 import { Heart, MessageCircle, RotateCcw, Clock, MapPin } from 'lucide-react';
 import { Button } from './ui/button';
 import { Avatar, AvatarFallback, AvatarImage } from './ui/avatar';
+import { USERS, FEED_USER_IDS, CARD_AUTHOR_IDS, getUser, type UserProfile } from '../data/users';
 
 interface Card {
   id: number;
@@ -20,15 +21,11 @@ interface CommunityFeedProps {
   onToggleLike: (cardId: number) => void;
   onRemix: (cardId: number) => void;
   onMessage?: () => void;
+  onViewProfile?: (user: UserProfile) => void;
 }
 
-export function CommunityFeed({ cards, onToggleLike, onRemix, onMessage }: CommunityFeedProps) {
-  // Mock user data
-  const users = [
-    { name: 'Maya', avatar: 'M', topCards: ['Street Art', 'Hidden Cafes', 'Rooftops'] },
-    { name: 'Alex', avatar: 'A', topCards: ['Museums', 'Sculptures', 'Galleries'] },
-    { name: 'Sam', avatar: 'S', topCards: ['Urbex', 'Tunnels', 'Bridges'] },
-  ];
+export function CommunityFeed({ cards, onToggleLike, onRemix, onMessage, onViewProfile }: CommunityFeedProps) {
+  const feedUsers = FEED_USER_IDS.map(id => getUser(id));
 
   const formatTimeAgo = (timestamp: string) => {
     const now = new Date();
@@ -55,14 +52,17 @@ export function CommunityFeed({ cards, onToggleLike, onRemix, onMessage }: Commu
       <div className="px-6 py-5 bg-white border-b border-black/[0.06]">
         <h2 className="text-xs uppercase tracking-wider font-semibold mb-4 text-[#6B6B6B]">Active Now</h2>
         <div className="flex gap-5">
-          {users.map((user) => (
-            <div key={user.name} className="flex-shrink-0 text-center">
-              <div className="w-14 h-14 bg-gradient-to-br from-[#1A1A1A] to-[#2A2A2A] rounded-full flex items-center justify-center text-white text-sm font-medium mb-2 shadow-premium">
-                {user.avatar}
+          {feedUsers.slice(0, 4).map((user) => (
+            <button key={user.id} className="flex-shrink-0 text-center" style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 0 }} onClick={() => onViewProfile?.(user)}>
+              <div className="relative mb-2">
+                <img src={user.avatar} alt={user.name} className="w-14 h-14 rounded-full object-cover shadow-premium" />
+                {user.isFriend && (
+                  <div style={{ position: 'absolute', bottom: 0, right: 0, width: 14, height: 14, borderRadius: '50%', background: '#10B981', border: '2.5px solid white' }} />
+                )}
               </div>
               <p className="text-xs font-medium text-[#1A1A1A] tracking-tight">{user.name}</p>
               <p className="text-[10px] text-[#9CA3AF] tracking-tight">{user.topCards[0]}</p>
-            </div>
+            </button>
           ))}
         </div>
       </div>
@@ -72,17 +72,19 @@ export function CommunityFeed({ cards, onToggleLike, onRemix, onMessage }: Commu
         {cards
           .sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime())
           .map((card, index) => {
-            const user = users[index % users.length];
-            
+            const authorId = CARD_AUTHOR_IDS[index % Object.keys(CARD_AUTHOR_IDS).length];
+            const user = getUser(authorId || 'lina');
+
             return (
               <div key={`card-${card.id}`} className="bg-white border-y border-black/[0.06]">
                 {/* User header */}
-                <div className="flex items-center px-6 py-4">
-                  <div className="w-9 h-9 bg-[#1A1A1A] rounded-full flex items-center justify-center text-white text-xs font-medium mr-3">
-                    {user.avatar}
-                  </div>
+                <button className="flex items-center px-6 py-4 w-full" style={{ background: 'none', border: 'none', cursor: 'pointer', textAlign: 'left' }} onClick={() => onViewProfile?.(user)}>
+                  <img src={user.avatar} alt={user.name} className="w-9 h-9 rounded-full object-cover mr-3" style={{ border: user.isFriend ? '2px solid #10B981' : '2px solid transparent' }} />
                   <div className="flex-1">
-                    <p className="text-sm font-medium text-[#1A1A1A] tracking-tight">{user.name}</p>
+                    <div className="flex items-center gap-1.5">
+                      <p className="text-sm font-medium text-[#1A1A1A] tracking-tight">{user.name}</p>
+                      {user.isFriend && <span style={{ fontSize: 9, background: '#10B981', color: '#fff', padding: '1px 5px', borderRadius: 999, fontWeight: 600 }}>Friend</span>}
+                    </div>
                     <div className="flex items-center text-xs text-[#9CA3AF] tracking-tight min-w-0">
                       <Clock className="w-3 h-3 mr-1 flex-shrink-0" strokeWidth={1.5} />
                       <span className="flex-shrink-0">{formatTimeAgo(card.timestamp)}</span>
@@ -91,7 +93,7 @@ export function CommunityFeed({ cards, onToggleLike, onRemix, onMessage }: Commu
                       <span className="truncate">{card.location}</span>
                     </div>
                   </div>
-                </div>
+                </button>
 
                 {/* Card image */}
                 <div className="aspect-[4/3] bg-gradient-to-br from-gray-50 to-gray-100 relative">

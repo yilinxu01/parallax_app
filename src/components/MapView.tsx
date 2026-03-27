@@ -1,9 +1,8 @@
 import React, { useEffect, useRef, useState } from 'react';
 import Map, { Marker, NavigationControl, Popup, MapRef } from 'react-map-gl/mapbox';
 import 'mapbox-gl/dist/mapbox-gl.css';
-import { Navigation, Heart, MapPin, Plus, ChevronDown, Lock } from 'lucide-react';
+import { Navigation, Heart, MapPin, Plus, ChevronDown, Lock, Users, Globe, User, MessageCircle, UserPlus, X } from 'lucide-react';
 import { Button } from './ui/button';
-import { Dialog, DialogContent, DialogTitle, DialogDescription } from './ui/dialog';
 import { ARDirections } from './ARDirections';
 
 interface Card {
@@ -38,11 +37,50 @@ const MY_LOCATION = { lat: 40.7231, lng: -74.0018 }; // Fixed in SoHo
 
 const UPCOMING_CITIES = ['Tokyo', 'Paris', 'London', 'Los Angeles', 'Buenos Aires', 'Shanghai'];
 
+// Mock friends with live locations
+const FRIENDS = [
+  { id: 'f1', name: 'Mei', avatar: 'https://i.pravatar.cc/80?img=5', lat: 40.7295, lng: -73.9965, status: 'Exploring SoHo' },
+  { id: 'f2', name: 'Jordan', avatar: 'https://i.pravatar.cc/80?img=12', lat: 40.7580, lng: -73.9855, status: 'Near Times Square' },
+  { id: 'f3', name: 'Suki', avatar: 'https://i.pravatar.cc/80?img=9', lat: 40.7282, lng: -73.7949, status: 'At a hidden café' },
+  { id: 'f4', name: 'Alex', avatar: 'https://i.pravatar.cc/80?img=33', lat: 40.7425, lng: -73.9885, status: 'Wandering Flatiron' },
+];
+
+// Author info for every card — some are friends, some are community users
+interface Author {
+  name: string;
+  avatar: string;
+  isFriend: boolean;
+  bio?: string;
+  cardCount?: number;
+}
+
+const CARD_AUTHORS: Record<number, Author> = {
+  0: { name: 'Lina', avatar: 'https://i.pravatar.cc/80?img=1', isFriend: false, bio: 'Architecture student. I collect doors.', cardCount: 12 },
+  1: { name: 'Tomás', avatar: 'https://i.pravatar.cc/80?img=7', isFriend: false, bio: 'Photographer & park bench enthusiast.', cardCount: 8 },
+  2: { name: 'Mei', avatar: 'https://i.pravatar.cc/80?img=5', isFriend: true, bio: 'Street art hunter. SoHo local.', cardCount: 23 },
+  3: { name: 'Kai', avatar: 'https://i.pravatar.cc/80?img=14', isFriend: false, bio: 'Night owl. I find things after dark.', cardCount: 6 },
+  4: { name: 'Priya', avatar: 'https://i.pravatar.cc/80?img=16', isFriend: false, bio: 'Rooftop collector. Heights don\'t scare me.', cardCount: 15 },
+  5: { name: 'Jordan', avatar: 'https://i.pravatar.cc/80?img=12', isFriend: true, bio: 'NYC native. Know every shortcut.', cardCount: 31 },
+  6: { name: 'Raven', avatar: 'https://i.pravatar.cc/80?img=20', isFriend: false, bio: 'Stairwell explorer & urban spelunker.', cardCount: 9 },
+  7: { name: 'Dani', avatar: 'https://i.pravatar.cc/80?img=23', isFriend: false, bio: 'Late night diner regular. Always booth 4.', cardCount: 4 },
+  8: { name: 'Suki', avatar: 'https://i.pravatar.cc/80?img=9', isFriend: true, bio: 'Transit nerd. Every platform has a story.', cardCount: 19 },
+  9: { name: 'Omar', avatar: 'https://i.pravatar.cc/80?img=11', isFriend: false, bio: 'Chess player. Washington Square regular.', cardCount: 7 },
+  10: { name: 'Alex', avatar: 'https://i.pravatar.cc/80?img=33', isFriend: true, bio: 'Foodie. If it\'s cash only, I\'m there.', cardCount: 14 },
+  11: { name: 'Yuki', avatar: 'https://i.pravatar.cc/80?img=25', isFriend: false, bio: 'Bookshop cat whisperer.', cardCount: 11 },
+  12: { name: 'Marco', avatar: 'https://i.pravatar.cc/80?img=30', isFriend: false, bio: 'Muralist. Colors are my language.', cardCount: 22 },
+  13: { name: 'Noor', avatar: 'https://i.pravatar.cc/80?img=32', isFriend: false, bio: 'Memory collector. I photograph feelings.', cardCount: 16 },
+};
+
+type MapFilter = 'everyone' | 'friends' | 'mine';
+
 export function MapView({ cards, savedCards = [], onToggleLike, onAddToCollection, onCreateCard, newCard, onNewCardShown }: MapViewProps) {
   const mapRef = useRef<MapRef>(null);
   const [selectedCard, setSelectedCard] = useState<Card | null>(null);
   const [showCityPicker, setShowCityPicker] = useState(false);
   const [showTooltip, setShowTooltip] = useState(false);
+  const [mapFilter, setMapFilter] = useState<MapFilter>('everyone');
+  const [viewingProfile, setViewingProfile] = useState<Author | null>(null);
+  const [fullProfile, setFullProfile] = useState<Author | null>(null);
 
   useEffect(() => {
     if (localStorage.getItem('hasCreatedCard')) return;
@@ -123,33 +161,72 @@ export function MapView({ cards, savedCards = [], onToggleLike, onAddToCollectio
 
   if (showAR && arCard) {
     return (
-      <ARDirections
-        card={arCard}
-        onBack={() => { setShowAR(false); setArCard(null); }}
-        onCardSaved={() => {
-          onAddToCollection(arCard.id as number);
-          setShowAR(false);
-          setArCard(null);
-        }}
-      />
+      <div style={{ height: '100%', overflow: 'hidden' }}>
+        <ARDirections
+          card={arCard}
+          onBack={() => { setShowAR(false); setArCard(null); }}
+          onCardSaved={() => {
+            onAddToCollection(arCard.id as number);
+            setShowAR(false);
+            setArCard(null);
+          }}
+        />
+      </div>
     );
   }
 
-  // Combine mock cards + any published API cards
-  const allPins = [
-    ...cards.map((card, i) => ({ card, color: PIN_COLORS[i % PIN_COLORS.length] })),
-    ...apiCards.map((card, i) => ({ card, color: PIN_COLORS[(cards.length + i) % PIN_COLORS.length] })),
+  // Combine mock cards + any published API cards, with author info
+  const allPinsUnfiltered = [
+    ...cards.map((card, i) => ({
+      card,
+      color: PIN_COLORS[i % PIN_COLORS.length],
+      author: CARD_AUTHORS[i] || null,
+      isMine: false,
+    })),
+    ...apiCards.map((card, i) => ({
+      card,
+      color: PIN_COLORS[(cards.length + i) % PIN_COLORS.length],
+      author: null,
+      isMine: true, // user-created cards
+    })),
   ];
 
-  const CardPopup = ({ card }: { card: Card }) => {
+  const allPins = allPinsUnfiltered.filter(pin => {
+    if (mapFilter === 'everyone') return true;
+    if (mapFilter === 'friends') return pin.author?.isFriend === true;
+    if (mapFilter === 'mine') return pin.isMine;
+    return true;
+  });
+
+  const CardPopup = ({ card, author }: { card: Card; author?: Author | null }) => {
     const isLiked = card.likes > 0;
     const isSaved = savedCards.some((c) => c.id === card.id);
 
     return (
       <div className="bg-white rounded-2xl overflow-hidden shadow-premium">
-        <div className="relative aspect-[4/3] bg-gradient-to-br from-gray-50 to-gray-100">
+        <div className="relative bg-gradient-to-br from-gray-50 to-gray-100" style={{ height: 200 }}>
           <img src={card.photo} alt={card.title} className="w-full h-full object-cover" />
           <div className="absolute inset-0 bg-gradient-to-t from-black/10 via-transparent to-transparent" />
+          {/* Author badge on image */}
+          {author && (
+            <button
+              onClick={(e) => { e.stopPropagation(); setViewingProfile(author); }}
+              style={{
+                position: 'absolute', top: 12, left: 12,
+                display: 'flex', alignItems: 'center', gap: 6,
+                background: 'rgba(255,255,255,0.92)', backdropFilter: 'blur(8px)',
+                borderRadius: 999, paddingLeft: 4, paddingRight: 10, paddingTop: 4, paddingBottom: 4,
+                boxShadow: '0 2px 8px rgba(0,0,0,0.12)',
+                border: 'none', cursor: 'pointer',
+              }}
+            >
+              <img src={author.avatar} alt={author.name} style={{ width: 20, height: 20, borderRadius: '50%', objectFit: 'cover' }} />
+              <span style={{ fontSize: 11, fontWeight: 600, color: '#1A1A1A' }}>{author.name}</span>
+              {author.isFriend && (
+                <span style={{ fontSize: 9, background: '#10B981', color: '#fff', padding: '1px 5px', borderRadius: 999, fontWeight: 600 }}>Friend</span>
+              )}
+            </button>
+          )}
         </div>
 
         <div className="p-6 space-y-4">
@@ -210,6 +287,7 @@ export function MapView({ cards, savedCards = [], onToggleLike, onAddToCollectio
           overflow: visible !important;
         }
         .story-hover-popup .mapboxgl-popup-tip { display: none !important; }
+        .mapboxgl-ctrl-top-right { top: 16px !important; }
       `}</style>
       <Map
         ref={mapRef}
@@ -244,7 +322,29 @@ export function MapView({ cards, savedCards = [], onToggleLike, onAddToCollectio
           </div>
         </Marker>
 
-        {allPins.map(({ card, color }) => (
+        {/* Friend live locations */}
+        {(mapFilter === 'everyone' || mapFilter === 'friends') && FRIENDS.map(friend => (
+          <Marker key={friend.id} longitude={friend.lng} latitude={friend.lat} anchor="center">
+            <div style={{ position: 'relative', cursor: 'pointer' }} title={`${friend.name} — ${friend.status}`}>
+              <div style={{
+                width: 36, height: 36, borderRadius: '50%',
+                border: '2.5px solid #10B981',
+                boxShadow: '0 2px 8px rgba(16,185,129,0.35)',
+                overflow: 'hidden',
+                background: '#fff',
+              }}>
+                <img src={friend.avatar} alt={friend.name} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+              </div>
+              <div style={{
+                position: 'absolute', bottom: -2, right: -2,
+                width: 12, height: 12, borderRadius: '50%',
+                background: '#10B981', border: '2px solid white',
+              }} />
+            </div>
+          </Marker>
+        ))}
+
+        {allPins.map(({ card, color, author }) => (
           <Marker
             key={card.id}
             longitude={card.lng}
@@ -258,9 +358,11 @@ export function MapView({ cards, savedCards = [], onToggleLike, onAddToCollectio
               onClick={() => { setSelectedCard(card); setHoveredCard(null); }}
               style={{
                 width: 24, height: 24, borderRadius: '50%',
-                border: '2.5px solid white', cursor: 'pointer',
+                border: `2.5px solid ${author?.isFriend ? '#10B981' : 'white'}`, cursor: 'pointer',
                 backgroundColor: color,
-                boxShadow: `0 2px 8px rgba(0,0,0,0.35), 0 0 0 3px ${color}33`,
+                boxShadow: author?.isFriend
+                  ? `0 2px 8px rgba(0,0,0,0.35), 0 0 0 3px rgba(16,185,129,0.3)`
+                  : `0 2px 8px rgba(0,0,0,0.35), 0 0 0 3px ${color}33`,
                 display: 'flex', alignItems: 'center', justifyContent: 'center',
                 transition: 'transform 0.15s',
               }}
@@ -335,16 +437,94 @@ export function MapView({ cards, savedCards = [], onToggleLike, onAddToCollectio
         )}
       </Map>
 
-      {/* Card popup — controlled Dialog (no DialogTrigger needed) */}
-      <Dialog open={selectedCard !== null} onOpenChange={(open) => { if (!open) setSelectedCard(null); }}>
-        <DialogContent className="max-w-sm mx-auto rounded-2xl border-0 p-0 overflow-hidden shadow-premium-lg">
-          <DialogTitle className="sr-only">{selectedCard?.title ?? 'Hidden Spot'}</DialogTitle>
-          <DialogDescription className="sr-only">
-            View details about this hidden spot discovery.
-          </DialogDescription>
-          {selectedCard && <CardPopup card={selectedCard} />}
-        </DialogContent>
-      </Dialog>
+      {/* Card popup — inline overlay (stays inside phone frame) */}
+      {selectedCard && (
+        <div
+          className="absolute inset-0 flex items-center justify-center bg-black/50 px-4"
+          style={{ zIndex: 999 }}
+          onClick={() => setSelectedCard(null)}
+        >
+          <div
+            className="w-full rounded-2xl overflow-hidden shadow-2xl bg-white"
+            style={{ maxHeight: '78%', overflowY: 'auto' }}
+            onClick={e => e.stopPropagation()}
+          >
+            <CardPopup card={selectedCard} author={allPinsUnfiltered.find(p => p.card.id === selectedCard.id)?.author} />
+          </div>
+        </div>
+      )}
+
+      {/* Profile overlay */}
+      {viewingProfile && (
+        <div
+          style={{ position: 'absolute', inset: 0, zIndex: 1100, display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'rgba(0,0,0,0.5)', padding: 16 }}
+          onClick={() => setViewingProfile(null)}
+        >
+          <div
+            style={{ width: '100%', maxWidth: 340, background: '#fff', borderRadius: 24, overflow: 'hidden', boxShadow: '0 20px 60px rgba(0,0,0,0.25)' }}
+            onClick={e => e.stopPropagation()}
+          >
+            {/* Header */}
+            <div style={{ background: 'linear-gradient(135deg, #1A1A1A 0%, #2A2A2A 100%)', padding: '28px 24px 20px', textAlign: 'center', position: 'relative' }}>
+              <button
+                onClick={() => setViewingProfile(null)}
+                style={{ position: 'absolute', top: 12, right: 12, background: 'rgba(255,255,255,0.15)', border: 'none', borderRadius: '50%', width: 28, height: 28, display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' }}
+              >
+                <X style={{ width: 14, height: 14, color: '#fff' }} />
+              </button>
+              <img src={viewingProfile.avatar} alt={viewingProfile.name} style={{ width: 64, height: 64, borderRadius: '50%', objectFit: 'cover', border: '3px solid rgba(255,255,255,0.2)', margin: '0 auto 12px' }} />
+              <div style={{ fontSize: 18, fontWeight: 700, color: '#fff' }}>{viewingProfile.name}</div>
+              {viewingProfile.bio && (
+                <div style={{ fontSize: 13, color: 'rgba(255,255,255,0.6)', marginTop: 4, lineHeight: 1.4 }}>{viewingProfile.bio}</div>
+              )}
+              {viewingProfile.isFriend && (
+                <div style={{ display: 'inline-flex', alignItems: 'center', gap: 4, marginTop: 8, background: 'rgba(16,185,129,0.2)', padding: '3px 10px', borderRadius: 999, fontSize: 11, fontWeight: 600, color: '#34D399' }}>
+                  <Users style={{ width: 10, height: 10 }} /> Friends
+                </div>
+              )}
+            </div>
+
+            {/* Stats */}
+            <div style={{ display: 'flex', borderBottom: '1px solid #F0F0F0' }}>
+              <div style={{ flex: 1, textAlign: 'center', padding: '14px 0' }}>
+                <div style={{ fontSize: 18, fontWeight: 700, color: '#1A1A1A' }}>{viewingProfile.cardCount || 0}</div>
+                <div style={{ fontSize: 11, color: '#9CA3AF' }}>Spots</div>
+              </div>
+              <div style={{ flex: 1, textAlign: 'center', padding: '14px 0', borderLeft: '1px solid #F0F0F0', borderRight: '1px solid #F0F0F0' }}>
+                <div style={{ fontSize: 18, fontWeight: 700, color: '#1A1A1A' }}>{viewingProfile.isFriend ? Math.floor(Math.random() * 8) + 3 : 0}</div>
+                <div style={{ fontSize: 11, color: '#9CA3AF' }}>Mutual</div>
+              </div>
+              <div style={{ flex: 1, textAlign: 'center', padding: '14px 0' }}>
+                <div style={{ fontSize: 18, fontWeight: 700, color: '#1A1A1A' }}>{Math.floor(Math.random() * 12) + 1}mo</div>
+                <div style={{ fontSize: 11, color: '#9CA3AF' }}>Active</div>
+              </div>
+            </div>
+
+            {/* Actions */}
+            <div style={{ padding: '16px 20px 8px', display: 'flex', gap: 10 }}>
+              {viewingProfile.isFriend ? (
+                <button style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6, background: '#1A1A1A', color: '#fff', border: 'none', borderRadius: 14, padding: '12px 0', fontSize: 14, fontWeight: 600, cursor: 'pointer' }}>
+                  <MessageCircle style={{ width: 16, height: 16 }} /> Message
+                </button>
+              ) : (
+                <button style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6, background: '#1A1A1A', color: '#fff', border: 'none', borderRadius: 14, padding: '12px 0', fontSize: 14, fontWeight: 600, cursor: 'pointer' }}>
+                  <UserPlus style={{ width: 16, height: 16 }} /> Add Friend
+                </button>
+              )}
+              <button style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', width: 48, background: '#F5F5F5', border: 'none', borderRadius: 14, cursor: 'pointer' }}>
+                <MapPin style={{ width: 16, height: 16, color: '#6B6B6B' }} />
+              </button>
+            </div>
+            {/* View full profile */}
+            <button
+              onClick={() => { setFullProfile(viewingProfile); setViewingProfile(null); setSelectedCard(null); }}
+              style={{ display: 'block', width: '100%', padding: '12px 20px 18px', background: 'none', border: 'none', cursor: 'pointer', fontSize: 13, fontWeight: 600, color: '#3A7AFE', textAlign: 'center' }}
+            >
+              View all {viewingProfile.cardCount || 0} spots →
+            </button>
+          </div>
+        </div>
+      )}
 
       {/* City selector — top left */}
       <button
@@ -355,6 +535,31 @@ export function MapView({ cards, savedCards = [], onToggleLike, onAddToCollectio
         <span className="text-sm font-semibold text-[#1A1A1A] tracking-tight">New York City</span>
         <ChevronDown className="w-3.5 h-3.5 text-[#6B6B6B]" strokeWidth={2.5} />
       </button>
+
+      {/* Filter pills */}
+      <div style={{ position: 'absolute', top: 72, left: 24, zIndex: 10, display: 'flex', gap: 6 }}>
+        {([
+          { key: 'everyone' as MapFilter, label: 'Everyone', icon: Globe },
+          { key: 'friends' as MapFilter, label: 'Friends', icon: Users },
+          { key: 'mine' as MapFilter, label: 'Mine', icon: User },
+        ]).map(({ key, label, icon: Icon }) => (
+          <button
+            key={key}
+            onClick={() => setMapFilter(key)}
+            className="flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-xs font-medium transition-all border"
+            style={{
+              background: mapFilter === key ? '#1A1A1A' : 'rgba(255,255,255,0.92)',
+              color: mapFilter === key ? '#fff' : '#6B6B6B',
+              borderColor: mapFilter === key ? '#1A1A1A' : 'rgba(0,0,0,0.06)',
+              backdropFilter: 'blur(8px)',
+              boxShadow: mapFilter === key ? '0 2px 8px rgba(0,0,0,0.2)' : '0 1px 4px rgba(0,0,0,0.08)',
+            }}
+          >
+            <Icon style={{ width: 12, height: 12 }} strokeWidth={2.5} />
+            {label}
+          </button>
+        ))}
+      </div>
 
       {/* City picker sheet */}
       {showCityPicker && (
@@ -400,8 +605,9 @@ export function MapView({ cards, savedCards = [], onToggleLike, onAddToCollectio
       <div className="absolute bottom-6 left-6 right-6 flex flex-col gap-3">
         <div style={{ alignSelf: 'flex-end' }}>
           <button
+            onClick={() => mapRef.current?.flyTo({ center: [MY_LOCATION.lng, MY_LOCATION.lat], zoom: 13, duration: 1200 })}
             className="w-12 h-12 rounded-xl bg-white shadow-premium border border-black/[0.06] hover:shadow-premium-md hover:bg-[#FAFAFA] text-[#1A1A1A] flex items-center justify-center transition-all"
-            aria-label="AR Navigation"
+            aria-label="Recenter map"
           >
             <Navigation className="w-5 h-5" strokeWidth={2} />
           </button>
@@ -412,7 +618,9 @@ export function MapView({ cards, savedCards = [], onToggleLike, onAddToCollectio
               <MapPin className="w-5 h-5 text-white" strokeWidth={1.5} />
             </div>
             <div>
-              <h3 className="text-sm font-semibold text-[#1A1A1A] tracking-tight">Hidden Spots</h3>
+              <h3 className="text-sm font-semibold text-[#1A1A1A] tracking-tight">
+                {mapFilter === 'friends' ? 'Friends\' Spots' : mapFilter === 'mine' ? 'My Spots' : 'Hidden Spots'}
+              </h3>
               <p className="text-xs text-[#6B6B6B]">{allPins.length} discoveries</p>
             </div>
           </div>
@@ -426,6 +634,87 @@ export function MapView({ cards, savedCards = [], onToggleLike, onAddToCollectio
           </div>
         </div>
       </div>
+
+      {/* Full profile page */}
+      {fullProfile && (() => {
+        // Find all cards by this author
+        const authorCards = allPinsUnfiltered.filter(p => p.author?.name === fullProfile.name).map(p => p.card);
+        const mutualCount = fullProfile.isFriend ? Math.floor(fullProfile.name.length * 1.3) + 2 : 0;
+        return (
+          <div style={{ position: 'absolute', inset: 0, zIndex: 1200, background: '#FAFAFA', display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
+            {/* Header */}
+            <div style={{ background: 'linear-gradient(135deg, #1A1A1A 0%, #333 100%)', padding: '40px 20px 24px', position: 'relative', flexShrink: 0 }}>
+              <button
+                onClick={() => setFullProfile(null)}
+                style={{ position: 'absolute', top: 16, left: 16, background: 'rgba(255,255,255,0.15)', border: 'none', borderRadius: 12, padding: '6px 14px', cursor: 'pointer', fontSize: 13, fontWeight: 500, color: '#fff', display: 'flex', alignItems: 'center', gap: 4 }}
+              >
+                ← Back
+              </button>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 16, marginTop: 24 }}>
+                <img src={fullProfile.avatar} alt={fullProfile.name} style={{ width: 56, height: 56, borderRadius: '50%', objectFit: 'cover', border: '3px solid rgba(255,255,255,0.2)' }} />
+                <div style={{ flex: 1 }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                    <span style={{ fontSize: 20, fontWeight: 700, color: '#fff' }}>{fullProfile.name}</span>
+                    {fullProfile.isFriend && (
+                      <span style={{ fontSize: 10, background: 'rgba(16,185,129,0.25)', color: '#34D399', padding: '2px 8px', borderRadius: 999, fontWeight: 600 }}>Friend</span>
+                    )}
+                  </div>
+                  {fullProfile.bio && (
+                    <div style={{ fontSize: 13, color: 'rgba(255,255,255,0.55)', marginTop: 4 }}>{fullProfile.bio}</div>
+                  )}
+                </div>
+              </div>
+              {/* Stats row */}
+              <div style={{ display: 'flex', gap: 24, marginTop: 20 }}>
+                <div><span style={{ fontSize: 16, fontWeight: 700, color: '#fff' }}>{fullProfile.cardCount || 0}</span><span style={{ fontSize: 12, color: 'rgba(255,255,255,0.45)', marginLeft: 4 }}>spots</span></div>
+                <div><span style={{ fontSize: 16, fontWeight: 700, color: '#fff' }}>{mutualCount}</span><span style={{ fontSize: 12, color: 'rgba(255,255,255,0.45)', marginLeft: 4 }}>mutual</span></div>
+              </div>
+              {/* Action buttons */}
+              <div style={{ display: 'flex', gap: 8, marginTop: 16 }}>
+                {fullProfile.isFriend ? (
+                  <button style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6, background: 'rgba(255,255,255,0.15)', color: '#fff', border: '1px solid rgba(255,255,255,0.2)', borderRadius: 12, padding: '10px 0', fontSize: 13, fontWeight: 600, cursor: 'pointer', backdropFilter: 'blur(8px)' }}>
+                    <MessageCircle style={{ width: 14, height: 14 }} /> Message
+                  </button>
+                ) : (
+                  <button style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6, background: '#fff', color: '#1A1A1A', border: 'none', borderRadius: 12, padding: '10px 0', fontSize: 13, fontWeight: 600, cursor: 'pointer' }}>
+                    <UserPlus style={{ width: 14, height: 14 }} /> Add Friend
+                  </button>
+                )}
+              </div>
+            </div>
+
+            {/* Cards grid */}
+            <div style={{ flex: 1, overflowY: 'auto', padding: '16px 16px 32px' }}>
+              <div style={{ fontSize: 13, fontWeight: 600, color: '#6B6B6B', marginBottom: 12, letterSpacing: '0.02em' }}>
+                {authorCards.length > 0 ? `${authorCards.length} Discoveries` : 'No spots yet'}
+              </div>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
+                {authorCards.map(card => (
+                  <button
+                    key={card.id}
+                    onClick={() => { setSelectedCard(card); setFullProfile(null); }}
+                    style={{ background: '#fff', border: '1px solid rgba(0,0,0,0.06)', borderRadius: 16, overflow: 'hidden', cursor: 'pointer', textAlign: 'left', boxShadow: '0 1px 4px rgba(0,0,0,0.06)' }}
+                  >
+                    <div style={{ width: '100%', height: 100, overflow: 'hidden' }}>
+                      <img src={card.photo} alt={card.title} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                    </div>
+                    <div style={{ padding: '10px 10px 12px' }}>
+                      <div style={{ fontSize: 12, fontWeight: 600, color: '#1A1A1A', lineHeight: 1.3, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{card.title}</div>
+                      <div style={{ fontSize: 10, color: '#9CA3AF', marginTop: 3 }}>{card.location.split(',')[0]}</div>
+                    </div>
+                  </button>
+                ))}
+              </div>
+              {/* Show remaining spots as placeholder thumbnails for the full card count */}
+              {(fullProfile.cardCount || 0) > authorCards.length && (
+                <div style={{ marginTop: 16, textAlign: 'center', fontSize: 12, color: '#9CA3AF', padding: '16px 0' }}>
+                  + {(fullProfile.cardCount || 0) - authorCards.length} more spots in other cities
+                </div>
+              )}
+            </div>
+          </div>
+        );
+      })()}
     </div>
   );
 }

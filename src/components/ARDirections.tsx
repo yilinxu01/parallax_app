@@ -1,13 +1,19 @@
-import React, { useState, useEffect } from 'react';
-import { Camera, Navigation, Target, CheckCircle } from 'lucide-react';
-import { Button } from './ui/button';
+import React, { useState, useEffect, useRef } from 'react';
+import { ChevronLeft, Navigation, CheckCircle } from 'lucide-react';
+
+const COMPASS = ['North', 'Northeast', 'East', 'Southeast', 'South', 'Southwest', 'West', 'Northwest'] as const;
+function headingLabel(deg: number): string {
+  const norm = ((deg % 360) + 360) % 360;
+  const idx = Math.round(norm / 45) % 8;
+  return COMPASS[idx];
+}
 
 interface Card {
   id: number;
   photo: string;
   title: string;
   story: string;
-  funFact: string;
+  funFact?: string;
   location: string;
   tags: string[];
   likes: number;
@@ -20,159 +26,307 @@ interface ARDirectionsProps {
   onCardSaved: () => void;
 }
 
+const S = {
+  root: {
+    height: '100%',
+    background: '#000',
+    position: 'relative' as const,
+    overflow: 'hidden',
+  },
+  video: {
+    position: 'absolute' as const,
+    inset: 0,
+    width: '100%',
+    height: '100%',
+    objectFit: 'cover' as const,
+  },
+  vignette: {
+    position: 'absolute' as const,
+    inset: 0,
+    background: 'linear-gradient(to bottom, rgba(0,0,0,0.5) 0%, transparent 30%, transparent 60%, rgba(0,0,0,0.6) 100%)',
+    pointerEvents: 'none' as const,
+  },
+  uiLayer: {
+    position: 'absolute' as const,
+    inset: 0,
+    display: 'flex',
+    flexDirection: 'column' as const,
+  },
+  backBtn: {
+    position: 'absolute' as const,
+    top: 40,
+    left: 16,
+    zIndex: 40,
+    display: 'flex',
+    alignItems: 'center',
+    gap: 4,
+    background: 'rgba(0,0,0,0.4)',
+    backdropFilter: 'blur(8px)',
+    borderRadius: 999,
+    paddingLeft: 8,
+    paddingRight: 16,
+    paddingTop: 8,
+    paddingBottom: 8,
+    color: '#fff',
+    fontSize: 14,
+    fontWeight: 500,
+    border: 'none',
+    cursor: 'pointer',
+  },
+} as const;
+
 export function ARDirections({ card, onBack, onCardSaved }: ARDirectionsProps) {
   const [arMode, setArMode] = useState<'navigation' | 'find-angle' | 'success'>('navigation');
-  const [distance, setDistance] = useState(250); // meters
-  const [alignment, setAlignment] = useState(0); // percentage of photo alignment
+  const [distance, setDistance] = useState(250);
+  const [alignment, setAlignment] = useState(0);
+  const [ghostOpacity, setGhostOpacity] = useState(0.45);
+  const [heading, setHeading] = useState(35); // degrees — start roughly NE
 
-  useEffect(() => {
-    // Mock distance countdown
-    if (arMode === 'navigation' && distance > 0) {
-      const timer = setInterval(() => {
-        setDistance(prev => Math.max(0, prev - 5));
-      }, 200);
-      return () => clearInterval(timer);
-    }
-    
-    // Switch to find-angle mode when close
-    if (distance <= 10 && arMode === 'navigation') {
-      setArMode('find-angle');
-    }
-  }, [distance, arMode]);
+  const videoRef = useRef<HTMLVideoElement>(null);
+  const streamRef = useRef<MediaStream | null>(null);
+  const refImgRef = useRef<HTMLImageElement | null>(null);
+  const simTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
+  // Start camera
   useEffect(() => {
-    // Mock photo alignment detection
-    if (arMode === 'find-angle') {
-      const timer = setInterval(() => {
-        setAlignment(prev => {
-          const newVal = prev + Math.random() * 10 - 5;
-          return Math.max(0, Math.min(100, newVal));
-        });
-      }, 100);
-      return () => clearInterval(timer);
-    }
+    navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' }, audio: false })
+      .then(stream => {
+        streamRef.current = stream;
+        if (videoRef.current) videoRef.current.srcObject = stream;
+      })
+      .catch(() => {});
+    return () => {
+      streamRef.current?.getTracks().forEach(t => t.stop());
+      if (simTimerRef.current) clearInterval(simTimerRef.current);
+    };
+  }, []);
+
+  // Preload reference image
+  useEffect(() => {
+    const img = new Image();
+    img.crossOrigin = 'anonymous';
+    img.src = card.photo;
+    img.onload = () => { refImgRef.current = img; };
+  }, [card.photo]);
+
+  // Distance countdown + irregular heading drift
+  useEffect(() => {
+    if (arMode !== 'navigation') return;
+    const distTimer = setInterval(() => {
+      setDistance(prev => {
+        const next = Math.max(0, prev - 5);
+        if (next <= 10) { setArMode('find-angle'); clearInterval(distTimer); }
+        return next;
+      });
+    }, 200);
+
+    // Heading drifts irregularly — small jitters every 800ms, bigger turns every 2.5s
+    const jitterTimer = setInterval(() => {
+      setHeading(prev => prev + (Math.random() - 0.4) * 12); // slight drift, biased forward
+    }, 800);
+    const turnTimer = setInterval(() => {
+      setHeading(prev => prev + (Math.random() - 0.3) * 60); // bigger course correction
+    }, 2500);
+
+    return () => {
+      clearInterval(distTimer);
+      clearInterval(jitterTimer);
+      clearInterval(turnTimer);
+    };
   }, [arMode]);
 
-  const handlePhotoAligned = () => {
+  // Histogram similarity in find-angle mode
+  useEffect(() => {
+    if (arMode !== 'find-angle') return;
+    const canvas = document.createElement('canvas');
+    canvas.width = 64; canvas.height = 64;
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return;
+
+    const getHist = (src: CanvasImageSource) => {
+      ctx.drawImage(src, 0, 0, 64, 64);
+      const d = ctx.getImageData(0, 0, 64, 64).data;
+      const h = new Float32Array(16);
+      for (let i = 0; i < d.length; i += 4)
+        h[Math.min(15, Math.floor((0.299 * d[i] + 0.587 * d[i+1] + 0.114 * d[i+2]) / 16))]++;
+      const s = h.reduce((a, b) => a + b, 0);
+      return h.map(v => v / s);
+    };
+
+    simTimerRef.current = setInterval(() => {
+      const v = videoRef.current, r = refImgRef.current;
+      if (!v || !r || v.readyState < 2) return;
+      try {
+        const sim = getHist(v).reduce((acc, v, i) => acc + Math.sqrt(v * getHist(r)[i]), 0);
+        const pct = Math.round(sim * 100);
+        setAlignment(pct);
+        setGhostOpacity(0.5 - (pct / 100) * 0.35);
+      } catch {}
+    }, 500);
+    return () => { if (simTimerRef.current) clearInterval(simTimerRef.current); };
+  }, [arMode]);
+
+  const handleSuccess = () => {
     setArMode('success');
-    setTimeout(() => {
-      onCardSaved();
-    }, 2000);
+    setTimeout(() => onCardSaved(), 2000);
   };
 
+  const handleBack = () => {
+    streamRef.current?.getTracks().forEach(t => t.stop());
+    onBack();
+  };
+
+  const alignColor = alignment > 75 ? '#22c55e' : alignment > 45 ? '#f59e0b' : '#60a5fa';
+  const dirLabel = headingLabel(heading);
+
   return (
-    <div className="h-screen bg-gradient-to-br from-black via-gray-900 to-black relative overflow-hidden">
-      {/* Mock camera background */}
-      <div className="absolute inset-0 bg-gradient-to-br from-gray-800 to-gray-900 opacity-80">
-        <div className="w-full h-full bg-gradient-to-t from-black/40 via-black/20 to-transparent flex items-center justify-center">
-          <Camera className="w-24 h-24 text-white/30" />
-        </div>
-      </div>
+    <div style={S.root}>
+      {/* Camera */}
+      <video ref={videoRef} autoPlay playsInline muted style={S.video} />
+
+      {/* Vignette */}
+      <div style={S.vignette} />
 
       {/* Back button */}
-      <button
-        onClick={onBack}
-        className="absolute top-6 left-6 z-20 bg-black/50 rounded-full p-3 text-white hover:bg-black/70 transition-colors"
-      >
-        ← Back
+      <button onClick={handleBack} style={S.backBtn}>
+        <ChevronLeft style={{ width: 16, height: 16 }} />
+        Back
       </button>
 
-      {/* AR UI Overlays */}
+      {/* ── NAVIGATION MODE ── */}
       {arMode === 'navigation' && (
-        <div className="absolute inset-0 z-10 flex flex-col items-center justify-center text-white">
-          {/* Navigation arrow */}
-          <div className="mb-8">
-            <div className="relative">
-              <Navigation className="w-16 h-16 text-blue-400 animate-pulse" />
-              <div className="absolute -top-2 -right-2 bg-blue-500 rounded-full p-1">
-                <div className="w-2 h-2 bg-white rounded-full"></div>
-              </div>
+        <div style={{ ...S.uiLayer, zIndex: 20 }}>
+          {/* top: distance badge */}
+          <div style={{ display: 'flex', justifyContent: 'center', paddingTop: 40 }}>
+            <div style={{ background: 'rgba(0,0,0,0.5)', backdropFilter: 'blur(12px)', borderRadius: 20, padding: '16px 32px', textAlign: 'center' }}>
+              <div style={{ fontSize: 48, fontWeight: 300, color: '#fff', lineHeight: 1, fontVariantNumeric: 'tabular-nums' }}>{distance}</div>
+              <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.5)', marginTop: 4, letterSpacing: '0.12em', textTransform: 'uppercase' }}>meters away</div>
             </div>
           </div>
 
-          {/* Distance info */}
-          <div className="bg-black/70 rounded-2xl px-6 py-4 text-center mb-8">
-            <p className="text-2xl font-medium">{distance}m</p>
-            <p className="text-sm text-gray-300">to {card.title}</p>
-          </div>
-
-          {/* Direction instruction */}
-          <div className="bg-gradient-to-br from-blue-500 to-blue-600 rounded-2xl p-4 max-w-xs text-center shadow-lg">
-            <p className="text-sm">Follow the arrow to reach the hidden spot!</p>
-          </div>
-        </div>
-      )}
-
-      {arMode === 'find-angle' && (
-        <div className="absolute inset-0 z-10 flex flex-col items-center justify-center text-white">
-          {/* Photo overlay */}
-          <div className="relative mb-8">
-            <div className="w-64 h-64 rounded-2xl overflow-hidden border-4 border-white/50 relative shadow-2xl">
-              <img 
-                src={card.photo} 
-                alt={card.title}
-                className="w-full h-full object-cover opacity-40"
-                style={{ opacity: alignment / 100 * 0.6 + 0.4 }}
+          {/* middle: animated compass arrow */}
+          <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 16 }}>
+            <div style={{
+              width: 88, height: 88, borderRadius: '50%',
+              background: 'rgba(96,165,250,0.1)',
+              border: '1.5px solid rgba(147,197,253,0.25)',
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+              boxShadow: '0 0 24px rgba(96,165,250,0.15)',
+              transition: 'box-shadow 0.3s ease',
+            }}>
+              <Navigation
+                style={{
+                  width: 36, height: 36,
+                  color: '#93c5fd',
+                  filter: 'drop-shadow(0 0 10px #60a5fa)',
+                  transform: `rotate(${heading}deg)`,
+                  transition: 'transform 0.6s cubic-bezier(0.4, 0, 0.2, 1)',
+                }}
               />
-              <div className="absolute inset-0 border-2 border-dashed border-white/70 rounded-2xl"></div>
             </div>
-            
-            {/* Alignment indicator */}
-            <div className="absolute -bottom-4 left-1/2 transform -translate-x-1/2">
-              <div className="bg-gradient-to-r from-black/70 to-black/80 rounded-full px-4 py-2 shadow-lg">
-                <p className="text-xs">{Math.round(alignment)}% aligned</p>
+            <div style={{
+              fontSize: 12, color: 'rgba(255,255,255,0.55)',
+              letterSpacing: '0.1em', textTransform: 'uppercase',
+              transition: 'opacity 0.3s ease',
+            }}>
+              Head {dirLabel.toLowerCase()}
+            </div>
+          </div>
+
+          {/* bottom: card info */}
+          <div style={{ background: 'rgba(0,0,0,0.6)', backdropFilter: 'blur(12px)', padding: '16px 20px 32px' }}>
+            <div style={{ width: 32, height: 4, background: 'rgba(255,255,255,0.25)', borderRadius: 2, margin: '0 auto 12px' }} />
+            <div style={{ color: '#fff', fontWeight: 600, fontSize: 15, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{card.title}</div>
+            <div style={{ color: 'rgba(255,255,255,0.45)', fontSize: 12, marginTop: 2 }}>{card.location}</div>
+            <div style={{ display: 'flex', flexWrap: 'wrap', gap: 4, marginTop: 8 }}>
+              {card.tags.slice(0, 3).map(tag => (
+                <span key={tag} style={{ fontSize: 10, color: 'rgba(255,255,255,0.5)', background: 'rgba(255,255,255,0.1)', padding: '2px 8px', borderRadius: 999 }}>{tag}</span>
+              ))}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ── FIND-ANGLE MODE ── */}
+      {arMode === 'find-angle' && (
+        <>
+          {/* Ghost reference photo */}
+          <div style={{ position: 'absolute', inset: 0, zIndex: 10, pointerEvents: 'none', opacity: ghostOpacity }}>
+            <img src={card.photo} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover', mixBlendMode: 'screen' }} />
+          </div>
+
+          {/* Corner brackets */}
+          {[
+            { top: 80, left: 24 },
+            { top: 80, right: 24 },
+            { bottom: 200, left: 24 },
+            { bottom: 200, right: 24 },
+          ].map((pos, i) => (
+            <div key={i} style={{
+              position: 'absolute', width: 32, height: 32, zIndex: 20, pointerEvents: 'none',
+              borderTop: i < 2 ? '2px solid rgba(255,255,255,0.7)' : undefined,
+              borderBottom: i >= 2 ? '2px solid rgba(255,255,255,0.7)' : undefined,
+              borderLeft: i % 2 === 0 ? '2px solid rgba(255,255,255,0.7)' : undefined,
+              borderRight: i % 2 === 1 ? '2px solid rgba(255,255,255,0.7)' : undefined,
+              ...pos,
+            }} />
+          ))}
+
+          {/* UI flex column */}
+          <div style={{ ...S.uiLayer, zIndex: 30 }}>
+            {/* Top: hint label */}
+            <div style={{ display: 'flex', justifyContent: 'center', paddingTop: 48 }}>
+              <div style={{ background: 'rgba(0,0,0,0.5)', backdropFilter: 'blur(8px)', borderRadius: 999, padding: '8px 20px', color: '#fff', fontSize: 14 }}>
+                Match the angle
               </div>
             </div>
-          </div>
 
-          {/* Target crosshair */}
-          <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-            <Target className="w-12 h-12 text-white/60" />
-          </div>
+            {/* Spacer */}
+            <div style={{ flex: 1 }} />
 
-          {/* Instructions */}
-          <div className="bg-gradient-to-br from-yellow-500 to-yellow-600 rounded-2xl p-4 max-w-xs text-center shadow-lg">
-            <p className="text-sm">Move your camera to match the original photo angle!</p>
-          </div>
+            {/* Bottom: controls */}
+            <div style={{ background: 'linear-gradient(to top, rgba(0,0,0,0.75) 0%, rgba(0,0,0,0.4) 70%, transparent 100%)', padding: '16px 24px 36px', display: 'flex', flexDirection: 'column', gap: 12 }}>
+              {/* Alignment bar */}
+              <div>
+                <div style={{ display: 'flex', justifyContent: 'space-between', color: 'rgba(255,255,255,0.55)', fontSize: 12, marginBottom: 6 }}>
+                  <span>Alignment</span>
+                  <span>{alignment}%</span>
+                </div>
+                <div style={{ height: 6, background: 'rgba(255,255,255,0.15)', borderRadius: 3, overflow: 'hidden' }}>
+                  <div style={{ height: '100%', width: `${alignment}%`, background: alignColor, borderRadius: 3, transition: 'width 0.5s ease, background 0.5s ease' }} />
+                </div>
+              </div>
 
-          {/* Success trigger when well aligned */}
-          {alignment > 85 && (
-            <Button
-              onClick={handlePhotoAligned}
-              className="mt-6 bg-gradient-to-br from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 rounded-2xl px-8 py-3 animate-pulse shadow-lg"
-            >
-              🎯 Perfect Match!
-            </Button>
-          )}
-        </div>
+              {/* Perfect Match — only at 85%+ */}
+              {alignment > 85 && (
+                <button onClick={handleSuccess} style={{ width: '100%', background: '#22c55e', border: 'none', borderRadius: 16, padding: '14px 0', color: '#fff', fontWeight: 600, fontSize: 16, cursor: 'pointer', boxShadow: '0 4px 20px rgba(34,197,94,0.4)' }}>
+                  Perfect Match!
+                </button>
+              )}
+
+              {/* Skip */}
+              <button onClick={handleSuccess} style={{ alignSelf: 'center', background: 'none', border: '1px solid rgba(255,255,255,0.2)', borderRadius: 12, padding: '8px 24px', color: 'rgba(255,255,255,0.5)', fontSize: 14, cursor: 'pointer' }}>
+                Skip for now
+              </button>
+            </div>
+          </div>
+        </>
       )}
 
+      {/* ── SUCCESS MODE ── */}
       {arMode === 'success' && (
-        <div className="absolute inset-0 z-10 flex flex-col items-center justify-center text-white bg-green-500/20">
-          <div className="text-center">
-            <CheckCircle className="w-24 h-24 text-green-400 mx-auto mb-6 animate-bounce" />
-            <h2 className="text-3xl font-medium mb-4">🎉 Discovered!</h2>
-            <p className="text-lg mb-2">{card.title}</p>
-            <p className="text-sm text-gray-300 max-w-xs">Card saved to your collection</p>
+        <div style={{ position: 'absolute', inset: 0, zIndex: 40, display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'rgba(0,0,0,0.4)', backdropFilter: 'blur(6px)' }}>
+          <div style={{ background: 'rgba(0,0,0,0.75)', backdropFilter: 'blur(20px)', borderRadius: 24, padding: 32, margin: '0 24px', color: '#fff', textAlign: 'center', border: '1px solid rgba(255,255,255,0.1)' }}>
+            <div style={{ width: 64, height: 64, background: 'rgba(34,197,94,0.15)', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 16px' }}>
+              <CheckCircle style={{ width: 36, height: 36, color: '#4ade80' }} />
+            </div>
+            <div style={{ fontSize: 24, fontWeight: 600, marginBottom: 4 }}>Discovered!</div>
+            <div style={{ color: 'rgba(255,255,255,0.75)', fontWeight: 500, marginBottom: 4 }}>{card.title}</div>
+            <div style={{ color: 'rgba(255,255,255,0.4)', fontSize: 13 }}>{card.location}</div>
+            <div style={{ marginTop: 16, paddingTop: 16, borderTop: '1px solid rgba(255,255,255,0.1)', color: 'rgba(255,255,255,0.35)', fontSize: 12 }}>Saved to your collection</div>
           </div>
         </div>
       )}
-
-      {/* Card info footer */}
-      <div className="absolute bottom-24 left-6 right-6 z-20 bg-black/70 backdrop-blur-sm rounded-2xl p-4 text-white">
-        <h3 className="font-medium mb-1 truncate">{card.title}</h3>
-        <p className="text-sm text-gray-300 line-clamp-2">{card.story}</p>
-        <div className="flex flex-wrap gap-1 mt-2">
-          {card.tags.slice(0, 3).map((tag) => (
-            <span
-              key={tag}
-              className="text-xs bg-white/20 px-2 py-1 rounded-full"
-            >
-              {tag}
-            </span>
-          ))}
-        </div>
-      </div>
     </div>
   );
 }
