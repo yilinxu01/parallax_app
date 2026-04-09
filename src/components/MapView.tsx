@@ -4,6 +4,7 @@ import 'mapbox-gl/dist/mapbox-gl.css';
 import { Navigation, Heart, MapPin, Plus, ChevronDown, Lock, Users, Globe, User, MessageCircle, UserPlus, X } from 'lucide-react';
 import { Button } from './ui/button';
 import { ARDirections } from './ARDirections';
+import { USERS, CARD_AUTHOR_IDS, FRIEND_IDS, getUser, type UserProfile } from '../data/users';
 
 interface Card {
   id: number | string;
@@ -37,39 +38,21 @@ const MY_LOCATION = { lat: 40.7231, lng: -74.0018 }; // Fixed in SoHo
 
 const UPCOMING_CITIES = ['Tokyo', 'Paris', 'London', 'Los Angeles', 'Buenos Aires', 'Shanghai'];
 
-// Mock friends with live locations
-const FRIENDS = [
-  { id: 'f1', name: 'Mei', avatar: 'https://i.pravatar.cc/80?img=5', lat: 40.7295, lng: -73.9965, status: 'Exploring SoHo' },
-  { id: 'f2', name: 'Jordan', avatar: 'https://i.pravatar.cc/80?img=12', lat: 40.7580, lng: -73.9855, status: 'Near Times Square' },
-  { id: 'f3', name: 'Suki', avatar: 'https://i.pravatar.cc/80?img=9', lat: 40.7282, lng: -73.7949, status: 'At a hidden café' },
-  { id: 'f4', name: 'Alex', avatar: 'https://i.pravatar.cc/80?img=33', lat: 40.7425, lng: -73.9885, status: 'Wandering Flatiron' },
-];
+// Friends with live locations — derived from shared user data
+const FRIENDS = FRIEND_IDS
+  .map(id => USERS[id])
+  .filter((u): u is UserProfile & { lat: number; lng: number } => u != null && u.lat != null && u.lng != null)
+  .map(u => ({ id: u.id, name: u.name, avatar: u.avatar, lat: u.lat, lng: u.lng, status: u.status || '' }));
 
-// Author info for every card — some are friends, some are community users
-interface Author {
-  name: string;
-  avatar: string;
-  isFriend: boolean;
-  bio?: string;
-  cardCount?: number;
-}
+// Author info derived from shared user data
+type Author = Pick<UserProfile, 'name' | 'avatar' | 'isFriend' | 'bio' | 'cardCount'>;
 
-const CARD_AUTHORS: Record<number, Author> = {
-  0: { name: 'Lina', avatar: 'https://i.pravatar.cc/80?img=1', isFriend: false, bio: 'Architecture student. I collect doors.', cardCount: 12 },
-  1: { name: 'Tomás', avatar: 'https://i.pravatar.cc/80?img=7', isFriend: false, bio: 'Photographer & park bench enthusiast.', cardCount: 8 },
-  2: { name: 'Mei', avatar: 'https://i.pravatar.cc/80?img=5', isFriend: true, bio: 'Street art hunter. SoHo local.', cardCount: 23 },
-  3: { name: 'Kai', avatar: 'https://i.pravatar.cc/80?img=14', isFriend: false, bio: 'Night owl. I find things after dark.', cardCount: 6 },
-  4: { name: 'Priya', avatar: 'https://i.pravatar.cc/80?img=16', isFriend: false, bio: 'Rooftop collector. Heights don\'t scare me.', cardCount: 15 },
-  5: { name: 'Jordan', avatar: 'https://i.pravatar.cc/80?img=12', isFriend: true, bio: 'NYC native. Know every shortcut.', cardCount: 31 },
-  6: { name: 'Raven', avatar: 'https://i.pravatar.cc/80?img=20', isFriend: false, bio: 'Stairwell explorer & urban spelunker.', cardCount: 9 },
-  7: { name: 'Dani', avatar: 'https://i.pravatar.cc/80?img=23', isFriend: false, bio: 'Late night diner regular. Always booth 4.', cardCount: 4 },
-  8: { name: 'Suki', avatar: 'https://i.pravatar.cc/80?img=9', isFriend: true, bio: 'Transit nerd. Every platform has a story.', cardCount: 19 },
-  9: { name: 'Omar', avatar: 'https://i.pravatar.cc/80?img=11', isFriend: false, bio: 'Chess player. Washington Square regular.', cardCount: 7 },
-  10: { name: 'Alex', avatar: 'https://i.pravatar.cc/80?img=33', isFriend: true, bio: 'Foodie. If it\'s cash only, I\'m there.', cardCount: 14 },
-  11: { name: 'Yuki', avatar: 'https://i.pravatar.cc/80?img=25', isFriend: false, bio: 'Bookshop cat whisperer.', cardCount: 11 },
-  12: { name: 'Marco', avatar: 'https://i.pravatar.cc/80?img=30', isFriend: false, bio: 'Muralist. Colors are my language.', cardCount: 22 },
-  13: { name: 'Noor', avatar: 'https://i.pravatar.cc/80?img=32', isFriend: false, bio: 'Memory collector. I photograph feelings.', cardCount: 16 },
-};
+const CARD_AUTHORS: Record<number, Author> = Object.fromEntries(
+  Object.entries(CARD_AUTHOR_IDS).map(([idx, userId]) => {
+    const u = getUser(userId);
+    return [Number(idx), { name: u.name, avatar: u.avatar, isFriend: u.isFriend, bio: u.bio, cardCount: u.cardCount }];
+  }),
+);
 
 type MapFilter = 'everyone' | 'friends' | 'mine';
 
